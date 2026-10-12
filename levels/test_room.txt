@@ -1,0 +1,26 @@
+###O###O###O###
+#_____________#
+L.*...*...*...L
+#....o...o....#
+C-------------C
+#....x....X...#
+#.*...*...*...#
+#......@......P
+######DD#######
+     #,,#
+     L,,L
+     #**#
+     #,,#
+  ####,,####
+  #...,,...#
+  R...==...R
+  #..*..*..#
+  ##########
+[shots]
+# shot <name> <col> <row> <yaw_deg> <pitch_deg>   (yaw 0 = looking toward row 0)
+shot a_bay 7 7 0 -2
+shot b_windows 11 2 30 3
+shot c_back 2 2 225 -4
+shot d_door 7 4 180 -3
+shot e_corridor 7 12 0 -2
+shot f_end 4 14 220 -10

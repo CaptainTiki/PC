@@ -1,0 +1,19 @@
+class_name Hud
+extends CanvasLayer
+## Minimal HUD: crosshair, health, cells, damage flash.
+
+@onready var health_label: Label = $Health/Value
+@onready var ammo_label: Label = $Ammo/Value
+@onready var damage_flash: ColorRect = $DamageFlash
+
+func set_health(h: float, _max_h: float) -> void:
+	health_label.text = str(int(ceil(h)))
+	health_label.modulate = Color(1, 0.35, 0.3) if h <= 25.0 else Color.WHITE
+
+func set_ammo(a: int, _max_a: int) -> void:
+	ammo_label.text = str(a)
+
+func flash_damage(strength: float) -> void:
+	damage_flash.color.a = 0.45 * strength
+	var t := create_tween()
+	t.tween_property(damage_flash, "color:a", 0.0, 0.4)

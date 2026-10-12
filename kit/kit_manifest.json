@@ -1,0 +1,112 @@
+[
+ {
+  "id": 0,
+  "name": "wall",
+  "note": "Plain steel wall block"
+ },
+ {
+  "id": 1,
+  "name": "wall_bulkhead",
+  "note": "Ribbed bulkhead wall block"
+ },
+ {
+  "id": 2,
+  "name": "wall_hazard",
+  "note": "Hazard stripes on +Z lower half"
+ },
+ {
+  "id": 3,
+  "name": "wall_cables",
+  "note": "Cable run on +Z upper half"
+ },
+ {
+  "id": 4,
+  "name": "wall_rust",
+  "note": "Rusted upper panel on +Z"
+ },
+ {
+  "id": 5,
+  "name": "wall_light",
+  "note": "Recessed cyan light strip on +Z (spawns OmniLight)"
+ },
+ {
+  "id": 6,
+  "name": "wall_vent",
+  "note": "Recessed floor-level vent on +Z"
+ },
+ {
+  "id": 7,
+  "name": "wall_console",
+  "note": "Recessed console screen on +Z (spawns dim light)"
+ },
+ {
+  "id": 8,
+  "name": "wall_lamp",
+  "note": "Red warning lamp on +Z (spawns red OmniLight)"
+ },
+ {
+  "id": 9,
+  "name": "wall_pipes",
+  "note": "Deep pipe bay on +Z"
+ },
+ {
+  "id": 10,
+  "name": "wall_window",
+  "note": "Deep-set window onto space on +Z (spawns faint light)"
+ },
+ {
+  "id": 11,
+  "name": "floor",
+  "note": "Concrete floor + ceiling"
+ },
+ {
+  "id": 12,
+  "name": "floor_metal",
+  "note": "Tread-plate floor + ceiling"
+ },
+ {
+  "id": 13,
+  "name": "floor_grate",
+  "note": "Glowing grate floor + ceiling (spawns low light)"
+ },
+ {
+  "id": 14,
+  "name": "floor_line",
+  "note": "Concrete floor with yellow line on -Z edge"
+ },
+ {
+  "id": 15,
+  "name": "floor_light",
+  "note": "Concrete floor, recessed ceiling light (spawns OmniLight)"
+ },
+ {
+  "id": 16,
+  "name": "floor_beam",
+  "note": "Concrete floor, ceiling I-beam along X"
+ },
+ {
+  "id": 17,
+  "name": "pillar",
+  "note": "Floor with central concrete pillar"
+ },
+ {
+  "id": 18,
+  "name": "crate",
+  "note": "Floor with one 1.2m crate"
+ },
+ {
+  "id": 19,
+  "name": "crate_stack",
+  "note": "Floor with stacked crates"
+ },
+ {
+  "id": 20,
+  "name": "door",
+  "note": "Door frame, passage along Z (spawns sliding door)"
+ },
+ {
+  "id": 21,
+  "name": "door_half",
+  "note": "Half of a 2-cell double door, jamb on -X (spawns slab that slides into the jamb side)"
+ }
+]
