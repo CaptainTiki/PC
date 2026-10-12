@@ -30,6 +30,7 @@
   "chamfer": 21,
   "kick": 22,
   "gutter": 23,
-  "window": 24
+  "gutter_glow": 24,
+  "window": 25
  }
 }

@@ -1,20 +1,36 @@
 extends SceneTree
-## ASCII -> GridMap level scene.
+## ASCII -> level scene with three GridMaps (Grid / Trim / Props) + clutter scenes.
 ## Run: godot --headless --path . -s tools/build_level.gd -- levels/test_room.txt
-## Output: levels/<name>.tscn (fully editable GridMap afterwards).
+## Output: levels/<name>.tscn — fully editable in the editor afterwards.
 ##
-## Walls auto-tile: each wall cell gets the profile piece matching its open sides
-## and inside corners (see tools/build_kit.gd), rotated into place. Wall cells with
-## no open neighbours (solid interior) are left empty. Feature walls (L, V, K...)
-## need exactly one open side; otherwise they fall back to a plain auto piece.
+## Walls auto-tile: each wall cell gets the face piece matching its open sides and
+## inside corners, plus matching trim (gutter in the Trim y=0 slot, chamfer in the
+## y=1 slot). Wall cells with no open neighbours are left empty.
+##
+## Legend
+##   walls   #  plain          !  plain + lit chamfer     ?  plain + broken light
+##           %  plain + glowing gutter
+##           C bulkhead  H hazard  W cables  U rust  L wall light  V vent
+##           K console   R red lamp  P pipe bay  O window      (features need a straight run)
+##   floors  .  deck   ,  tread plate   =  glowing grate   _  yellow edge line   * ceiling light
+##   props   o  pillar   -  ceiling beam   +  beam crossing   t  cable tray (auto-joins)
+##           p  vertical pipes (against the nearest wall)
+##   clutter x  crate    X  crate stack   (free-placed scenes, not grid)
+##   other   D  door (DD = double door)   @  player start   e  Drifter
 
-const LEGEND := {
-	"#": "wall", "C": "wall_bulkhead", "O": "wall_window", "H": "wall_hazard", "W": "wall_cables", "U": "wall_rust",
-	"L": "wall_light", "V": "wall_vent", "K": "wall_console", "R": "wall_lamp", "P": "wall_pipes",
-	".": "floor", ",": "floor_metal", "=": "floor_grate", "_": "floor_line", "*": "floor_light",
-	"-": "floor_beam", "o": "pillar", "x": "crate", "X": "crate_stack", "D": "door", "@": "floor", "e": "floor",
+const WALLS := {
+	"#": "", "!": "", "?": "", "%": "",
+	"C": "wall_bulkhead", "H": "wall_hazard", "W": "wall_cables", "U": "wall_rust", "L": "wall_light",
+	"V": "wall_vent", "K": "wall_console", "R": "wall_lamp", "P": "wall_pipes", "O": "wall_window",
 }
-const WALL_CHARS := "#CHWULVKRPO"
+const FLOORS := {
+	".": "floor", ",": "floor_metal", "=": "floor_grate", "_": "floor_line", "*": "floor_light",
+	"o": "floor", "-": "floor", "+": "floor", "t": "floor", "p": "floor",
+	"x": "floor", "X": "floor", "@": "floor", "e": "floor", "D": "door",
+}
+# DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
+const MDIRS := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
+const TRAYS := {1: "tray_end", 3: "tray_corner", 5: "tray", 7: "tray_t", 15: "tray_cross"}
 
 var rows: PackedStringArray
 
@@ -23,20 +39,13 @@ func ch(c: int, r: int) -> String:
 		return " "
 	return rows[r][c]
 
-func is_open(s: String) -> bool:
-	return s != " " and not WALL_CHARS.contains(s)
-
 func is_wall(s: String) -> bool:
-	return WALL_CHARS.contains(s)
-
-# DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
-const MDIRS := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
-const NAMED := {"1_0": "wall", "3_0": "wall_corner_out", "0_1": "wall_corner_in"}
+	return WALLS.has(s)
 
 func opens(c: int, r: int) -> bool:
 	# for wall signatures: walkable floor only (doors count as wall)
 	var s := ch(c, r)
-	return s != " " and not WALL_CHARS.contains(s) and s != "D"
+	return FLOORS.has(s) and s != "D"
 
 func rot_mask(m: int, k: int) -> int:
 	var out := 0
@@ -53,6 +62,13 @@ func canonical(sides: int, diag: int) -> Array:
 			best = [key, rot_mask(sides, k), rot_mask(diag, k), k]
 	return best
 
+func sig_name(prefix: String, sides: int, diag: int) -> String:
+	var key := "%d_%d" % [sides, diag]
+	var named := {"1_0": "", "3_0": "_corner_out", "0_1": "_corner_in"}
+	if named.has(key):
+		return prefix + named[key]
+	return "%s_auto_%s" % [prefix, key]
+
 func wall_signature(c: int, r: int) -> Array:
 	var sides := 0
 	var diag := 0
@@ -67,13 +83,25 @@ func wall_signature(c: int, r: int) -> Array:
 			diag |= 1 << j
 	return [sides, diag]
 
-func orient_k(k: int, grid: GridMap) -> int:
-	return grid.get_orthogonal_index_from_basis(Basis(Vector3.UP, k * PI / 2.0))
+func orient_k(k: int, g: GridMap) -> int:
+	return g.get_orthogonal_index_from_basis(Basis(Vector3.UP, k * PI / 2.0))
 
-func orient_for(dir: Vector2i, grid: GridMap) -> int:
-	# rotate so local +Z points along dir (x=col, y=row)
-	var ang := atan2(float(dir.x), float(dir.y))
-	return grid.get_orthogonal_index_from_basis(Basis(Vector3.UP, ang))
+func new_grid(name: String, lib_path: String, cell: Vector3, root: Node) -> GridMap:
+	var g := GridMap.new()
+	g.name = name
+	g.mesh_library = load(lib_path)
+	g.cell_size = cell
+	g.cell_center_y = false
+	g.cell_octant_size = 4
+	root.add_child(g)
+	g.owner = root
+	return g
+
+func ids_of(g: GridMap) -> Dictionary:
+	var ids := {}
+	for id in g.mesh_library.get_item_list():
+		ids[g.mesh_library.get_item_name(id)] = id
+	return ids
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -81,74 +109,114 @@ func _init() -> void:
 	var text := FileAccess.open("res://" + src, FileAccess.READ).get_as_text()
 	var parts := text.split("[shots]")
 	rows = parts[0].strip_edges(false, true).split("\n")
-	var lib: MeshLibrary = load("res://kit/kit.meshlib.res")
-	var ids := {}
-	for id in lib.get_item_list():
-		ids[lib.get_item_name(id)] = id
 
 	var root := Node3D.new()
 	root.name = src.get_file().get_basename().to_pascal_case()
 	root.set_script(load("res://scripts/level.gd"))
+	var grid := new_grid("Grid", "res://kit/structure.meshlib.res", Vector3(2, 4, 2), root)
+	var trim := new_grid("Trim", "res://kit/trim.meshlib.res", Vector3(2, 2, 2), root)
+	var props := new_grid("Props", "res://kit/props.meshlib.res", Vector3(2, 4, 2), root)
+	var sid := ids_of(grid)
+	var tid := ids_of(trim)
+	var pid := ids_of(props)
 
-	var grid := GridMap.new()
-	grid.name = "Grid"
-	grid.mesh_library = lib
-	grid.cell_size = Vector3(2, 4, 2)
-	grid.cell_center_y = false
-	grid.cell_octant_size = 4
-	root.add_child(grid)
-	grid.owner = root
+	var clutter := Node3D.new()
+	clutter.name = "Clutter"
+	root.add_child(clutter)
+	clutter.owner = root
+	var crate_scenes := {"x": load("res://scenes/props/crate.tscn"), "X": load("res://scenes/props/crate_stack.tscn")}
 
-	var dirs := [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]
 	var player_pos := Vector3.ZERO
 	var enemy_cells: Array[Vector3i] = []
 	for r in rows.size():
 		for c in rows[r].length():
 			var s := rows[r][c]
-			if not LEGEND.has(s):
-				continue
-			var item: String = LEGEND[s]
-			var ori := 0
+			var cell := Vector3i(c, 0, r)
 			if is_wall(s):
 				var sig := wall_signature(c, r)
 				if sig[0] == 0 and sig[1] == 0:
-					continue                                   # solid interior: draw nothing
-				var feature := s != "#"
-				if feature and sig[1] == 0 and [1, 2, 4, 8].has(sig[0]):
-					ori = orient_k([1, 2, 4, 8].find(sig[0]), grid)   # straight feature piece
-				else:
-					if feature:
-						push_warning("feature wall '%s' at %d,%d isn't a straight run; using plain wall" % [s, c, r])
-					var cn := canonical(sig[0], sig[1])
-					var key := "%d_%d" % [cn[1], cn[2]]
-					item = NAMED.get(key, "wall_auto_" + key)
-					# canonical = rot(actual, k)  ->  actual = rot(canonical, 4-k)
-					ori = orient_k((4 - int(cn[3])) % 4, grid)
-			elif s == "_":
-				for d in dirs:   # line goes on the -Z edge -> point -Z at the wall
+					continue                                    # solid interior: nothing
+				var cn := canonical(sig[0], sig[1])
+				var wori := orient_k((4 - int(cn[3])) % 4, grid)   # canonical -> actual
+				var straight: bool = sig[1] == 0 and [1, 2, 4, 8].has(sig[0])
+				var face_item := sig_name("wall", cn[1], cn[2])
+				var feature: String = WALLS[s]
+				var fori := wori
+				if feature != "":
+					if straight:
+						face_item = feature
+						fori = orient_k([1, 2, 4, 8].find(sig[0]), grid)
+					else:
+						push_warning("feature '%s' at %d,%d needs a straight run; using plain wall" % [s, c, r])
+				grid.set_cell_item(cell, sid[face_item], fori)
+				var gutter := "gutter_glow" if s == "%" else "gutter"
+				var chamfer := sig_name("chamfer", cn[1], cn[2])
+				var cori := wori
+				if (s == "!" or s == "?") and straight:
+					chamfer = "chamfer_light" if s == "!" else "chamfer_light_broken"
+					cori = orient_k([1, 2, 4, 8].find(sig[0]), trim)
+				trim.set_cell_item(Vector3i(c, 0, r), tid[sig_name(gutter, cn[1], cn[2])], wori)
+				trim.set_cell_item(Vector3i(c, 1, r), tid[chamfer], cori)
+				continue
+			if not FLOORS.has(s):
+				continue
+			var item: String = FLOORS[s]
+			var ori := 0
+			if s == "_":
+				for i in 4:   # line is on the local -Z edge -> point -Z at the wall
+					var d: Vector2i = MDIRS[i]
 					if is_wall(ch(c + d.x, r + d.y)):
-						ori = orient_for(-d, grid)
+						ori = orient_k((i + 2) % 4, grid)
 						break
-			elif s == "D" and (ch(c + 1, r) == "D" or ch(c - 1, r) == "D" or ch(c, r + 1) == "D" or ch(c, r - 1) == "D"):
-				item = "door_half"
-				if ch(c + 1, r) == "D":
-					ori = 0                                    # jamb on -X
-				elif ch(c - 1, r) == "D":
-					ori = orient_for(Vector2i(0, -1), grid)    # 180: jamb on +X
-				elif ch(c, r - 1) == "D":
-					ori = orient_for(Vector2i(1, 0), grid)     # jamb on +Z
-				else:
-					ori = orient_for(Vector2i(-1, 0), grid)    # jamb on -Z
 			elif s == "D":
-				if is_wall(ch(c - 1, r)) and is_wall(ch(c + 1, r)):
-					ori = 0
-				else:
-					ori = orient_for(Vector2i(1, 0), grid)
-			grid.set_cell_item(Vector3i(c, 0, r), ids[item], ori)
-			if s == "@":
-				player_pos = grid.map_to_local(Vector3i(c, 0, r))
-			elif s == "e":
-				enemy_cells.append(Vector3i(c, 0, r))
+				if ch(c + 1, r) == "D" or ch(c - 1, r) == "D" or ch(c, r + 1) == "D" or ch(c, r - 1) == "D":
+					item = "door_half"
+					if ch(c + 1, r) == "D":
+						ori = 0                       # jamb on -X
+					elif ch(c - 1, r) == "D":
+						ori = orient_k(2, grid)       # jamb on +X
+					elif ch(c, r - 1) == "D":
+						ori = orient_k(1, grid)
+					else:
+						ori = orient_k(3, grid)
+				elif not (is_wall(ch(c - 1, r)) and is_wall(ch(c + 1, r))):
+					ori = orient_k(1, grid)
+			grid.set_cell_item(cell, sid[item], ori)
+			# props / clutter / actors
+			match s:
+				"o":
+					props.set_cell_item(cell, pid["pillar"], 0)
+				"-":
+					var along_z := (ch(c, r - 1) == "-" or ch(c, r + 1) == "-") and not (ch(c - 1, r) == "-" or ch(c + 1, r) == "-")
+					props.set_cell_item(cell, pid["beam"], orient_k(1, props) if along_z else 0)
+				"+":
+					props.set_cell_item(cell, pid["beam_cross"], 0)
+				"t":
+					var arms := 0
+					for i in 4:
+						var d: Vector2i = MDIRS[i]
+						if ch(c + d.x, r + d.y) == "t":
+							arms |= 1 << i
+					if arms == 0:
+						arms = 5
+					var tc := canonical(arms, 0)
+					props.set_cell_item(cell, pid[TRAYS[tc[1]]], orient_k((4 - int(tc[3])) % 4, props))
+				"p":
+					for i in 4:
+						var d: Vector2i = MDIRS[i]
+						if is_wall(ch(c + d.x, r + d.y)):
+							props.set_cell_item(cell, pid["pipes_vertical"], orient_k(i, props))
+							break
+				"x", "X":
+					var crate: Node3D = crate_scenes[s].instantiate()
+					crate.position = grid.map_to_local(cell)
+					crate.rotation.y = deg_to_rad(float((c * 37 + r * 91) % 31) - 15.0)
+					clutter.add_child(crate, true)
+					crate.owner = root
+				"@":
+					player_pos = grid.map_to_local(cell)
+				"e":
+					enemy_cells.append(cell)
 
 	# environment
 	var we := WorldEnvironment.new()
@@ -211,5 +279,6 @@ func _init() -> void:
 	var ps := PackedScene.new()
 	ps.pack(root)
 	var out := "res://levels/%s.tscn" % src.get_file().get_basename()
-	print("saved ", out, " -> ", ResourceSaver.save(ps, out), "  cells=", grid.get_used_cells().size())
+	print("saved ", out, " -> ", ResourceSaver.save(ps, out), "  structure=", grid.get_used_cells().size(),
+		" trim=", trim.get_used_cells().size(), " props=", props.get_used_cells().size())
 	quit()

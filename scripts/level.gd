@@ -1,9 +1,12 @@
 @tool
 class_name Level
 extends Node3D
-## Level root. Paint the GridMap, then press "Bake" (inspector) — this writes
-## OmniLights for light cells and Door scenes for door cells into the scene as
-## normal saved nodes under "Baked". Wall trims live in the wall pieces themselves.
+## Level root. Three GridMaps on one grid:
+##   Grid  (structure, 2x4x2): wall faces, floors, doors
+##   Trim  (2x2x2): slot y=0 floor trim (gutters), slot y=1 ceiling trim (chamfers, lights)
+##   Props (2x4x2): runs that tile cell to cell (cable trays, pipes, beams, pillars)
+## Paint, then press "Bake" (inspector): OmniLights for light pieces and Door scenes
+## for door cells are written into the scene as normal saved nodes under "Baked".
 ## Nothing is generated at runtime. Re-bake after editing the grid.
 ##
 ## Capture mode (automated screenshots):
@@ -17,7 +20,11 @@ const LIGHTS := {
 	"wall_console": [Vector3(0, 1.8, 0.65), Color(0.3, 0.85, 1.0), 0.6, 3.5, false],
 	"wall_window": [Vector3(0, 2.0, 0.55), Color(0.45, 0.6, 1.0), 0.7, 4.5, false],
 	"floor_grate": [Vector3(0, 0.35, 0), Color(0.25, 0.8, 1.0), 0.3, 2.5, false],
+	# trim grid, ceiling slot (cell origin is 2m up)
+	"chamfer_light": [Vector3(0, 1.3, 1.1), Color(0.55, 0.9, 1.0), 2.4, 8.5, false],
+	"chamfer_light_broken": [Vector3(0, 1.3, 1.1), Color(0.55, 0.9, 1.0), 1.2, 6.0, false],
 }
+const FLICKER := ["chamfer_light_broken"]
 const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 
 @export_tool_button("Bake lights & doors", "Bake") var bake_action := bake
@@ -49,7 +56,9 @@ func bake() -> void:
 	var root := self if owner == null else owner
 	baked.owner = root
 	meta = JSON.parse_string(FileAccess.get_file_as_string("res://art/textures/tiles.json"))
-	_bake_cells(baked, root)
+	for g in [get_node_or_null("Grid"), get_node_or_null("Trim"), get_node_or_null("Props")]:
+		if g:
+			_bake_cells(g, baked, root)
 
 func _own(parent: Node, n: Node, root: Node) -> void:
 	parent.add_child(n, true)
@@ -68,11 +77,11 @@ func _is_open(c: Vector3i) -> bool:
 	return n != "" and not n.begins_with("wall") and not n.begins_with("door")
 
 # ------------------------------------------------------------ live cells ----
-func _bake_cells(parent: Node, root: Node) -> void:
-	for cell in grid.get_used_cells():
-		var nm := _name_at(cell)
-		var basis := grid.get_basis_with_orthogonal_index(grid.get_cell_item_orientation(cell))
-		var origin := grid.map_to_local(cell)
+func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
+	for cell in g.get_used_cells():
+		var nm := g.mesh_library.get_item_name(g.get_cell_item(cell))
+		var basis := g.get_basis_with_orthogonal_index(g.get_cell_item_orientation(cell))
+		var origin := g.map_to_local(cell)
 		if LIGHTS.has(nm):
 			var d: Array = LIGHTS[nm]
 			var l := OmniLight3D.new()
@@ -83,6 +92,9 @@ func _bake_cells(parent: Node, root: Node) -> void:
 			l.omni_range = d[3]
 			l.omni_attenuation = 1.4
 			l.shadow_enabled = d[4]
+			if nm in FLICKER:
+				l.set_script(FlickerLight)
+				l.base_energy = d[2]
 			_own(parent, l, root)
 		elif nm == "door" or nm == "door_half":
 			var door: Door = DOOR_SCENE.instantiate()

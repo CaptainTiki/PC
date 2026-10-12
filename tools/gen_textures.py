@@ -400,12 +400,8 @@ def chamfer():
     s = 0.46 + (vnoise(4, octaves=2) - 0.5) * 0.08
     for x0 in (0, 32):
         s = bevel(s, x0, 0, x0 + 32, T, 0.1, 0.2, 1)
-    rgb = quant(s, "steel")
-    em = np.zeros((T, T, 3), np.float32)
-    strip = (Y >= 6) & (Y < 9) & ((X % 32) > 3) & ((X % 32) < 29)
-    col = quant(np.full((T, T), 0.8), "cyan", 0)
-    rgb[strip] = col[strip]; em[strip] = col[strip] * 0.8
-    return rgb, em
+    s[6:8, :] -= 0.12     # shadow line near the ceiling edge
+    return quant(s, "steel")
 
 
 def kick():
@@ -445,6 +441,16 @@ def gutter():
     return quant(s, "steel")
 
 
+
+def gutter_glow():
+    rgb = gutter()
+    em = np.zeros((T, T, 3), np.float32)
+    slots = ((X % 6) >= 2) & ((Y % 16) >= 4) & ((Y % 16) < 12) & ((Y // 16) % 2 == 0)
+    col = quant(np.full((T, T), 0.55), "cyan", 0)
+    rgb[slots] = col[slots]; em[slots] = col[slots] * 0.5
+    return rgb, em
+
+
 # ---- register (order = atlas index; keep stable once levels exist) --------
 add("floor_concrete", floor_concrete())
 add("floor_metal", floor_metal())
@@ -467,9 +473,10 @@ add("floor_line", floor_line())
 add("wall_cables", wall_cables())
 add("rust_plate", rust_plate())
 add("beam", beam())
-add("chamfer", *chamfer())
+add("chamfer", chamfer())
 add("kick", kick())
 add("gutter", gutter())
+add("gutter_glow", *gutter_glow())
 add("window", *window())
 
 rows = (len(tiles) + COLS - 1) // COLS

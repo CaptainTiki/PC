@@ -1,14 +1,19 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=14 format=3]
 
-[ext_resource type="Script" path="res://scripts/level.gd" id="1_wyybw"]
-[ext_resource type="MeshLibrary" path="res://kit/kit.meshlib.res" id="2_y5wqh"]
-[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="3_77pwf"]
-[ext_resource type="Script" path="res://scripts/player.gd" id="4_lktwm"]
-[ext_resource type="PackedScene" path="res://scenes/props/door.tscn" id="5_bodbi"]
-[ext_resource type="Script" path="res://scripts/door.gd" id="6_lapnv"]
-[ext_resource type="ArrayMesh" path="res://kit/door_slab_half.res" id="7_o3jvf"]
+[ext_resource type="Script" path="res://scripts/level.gd" id="1_lapnv"]
+[ext_resource type="MeshLibrary" path="res://kit/structure.meshlib.res" id="2_o3jvf"]
+[ext_resource type="MeshLibrary" path="res://kit/trim.meshlib.res" id="3_6eehy"]
+[ext_resource type="MeshLibrary" path="res://kit/props.meshlib.res" id="4_k0tjh"]
+[ext_resource type="PackedScene" path="res://scenes/props/crate.tscn" id="5_8i8ys"]
+[ext_resource type="PackedScene" path="res://scenes/props/crate_stack.tscn" id="6_y0nbg"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="7_ot4tr"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="8_yomx0"]
+[ext_resource type="PackedScene" path="res://scenes/props/door.tscn" id="9_c6ysg"]
+[ext_resource type="Script" path="res://scripts/door.gd" id="10_blpko"]
+[ext_resource type="ArrayMesh" path="res://kit/door_slab_half.res" id="11_gs5p8"]
+[ext_resource type="Script" path="res://scripts/flicker_light.gd" id="12_ph6uo"]
 
-[sub_resource type="Environment" id="Environment_6eehy"]
+[sub_resource type="Environment" id="Environment_2y21t"]
 background_mode = 1
 background_color = Color(0.01, 0.01, 0.012, 1)
 ambient_light_source = 2
@@ -25,25 +30,50 @@ fog_light_color = Color(0.05, 0.07, 0.1, 1)
 fog_density = 0.015
 
 [node name="TestRoom" type="Node3D"]
-script = ExtResource("1_wyybw")
+script = ExtResource("1_lapnv")
 
 [node name="Grid" type="GridMap" parent="."]
-mesh_library = ExtResource("2_y5wqh")
+mesh_library = ExtResource("2_o3jvf")
 cell_size = Vector3(2, 4, 2)
 cell_octant_size = 4
 cell_center_y = false
 data = {
-"cells": PackedInt32Array(0, 0, 0, 1, 0, 5, 2, 0, 5, 3, 0, 23, 4, 0, 5, 5, 0, 5, 6, 0, 5, 7, 0, 23, 8, 0, 5, 9, 0, 5, 10, 0, 5, 11, 0, 23, 12, 0, 5, 13, 0, 5, 14, 0, 1441792, 0, 1, 1048581, 1, 1, 27, 2, 1, 27, 3, 1, 27, 4, 1, 27, 5, 1, 27, 6, 1, 27, 7, 1, 27, 8, 1, 27, 9, 1, 27, 10, 1, 27, 11, 1, 27, 12, 1, 27, 13, 1, 27, 14, 1, 1441797, 0, 2, 1048594, 1, 2, 24, 2, 2, 28, 3, 2, 24, 4, 2, 24, 5, 2, 24, 6, 2, 28, 7, 2, 24, 8, 2, 24, 9, 2, 24, 10, 2, 28, 11, 2, 24, 12, 2, 24, 13, 2, 24, 14, 2, 1441810, 0, 3, 1048581, 1, 3, 24, 2, 3, 24, 3, 3, 24, 4, 3, 24, 5, 3, 30, 6, 3, 24, 7, 3, 24, 8, 3, 24, 9, 3, 30, 10, 3, 24, 11, 3, 24, 12, 3, 24, 13, 3, 24, 14, 3, 1441797, 0, 4, 1048590, 1, 4, 29, 2, 4, 29, 3, 4, 29, 4, 4, 29, 5, 4, 29, 6, 4, 29, 7, 4, 29, 8, 4, 29, 9, 4, 29, 10, 4, 29, 11, 4, 29, 12, 4, 29, 13, 4, 29, 14, 4, 1441806, 0, 5, 1048581, 1, 5, 24, 2, 5, 24, 3, 5, 24, 4, 5, 24, 5, 5, 31, 6, 5, 24, 7, 5, 24, 8, 5, 24, 9, 5, 24, 10, 5, 32, 11, 5, 24, 12, 5, 24, 13, 5, 24, 14, 5, 1441797, 0, 6, 1048581, 1, 6, 24, 2, 6, 28, 3, 6, 24, 4, 6, 24, 5, 6, 24, 6, 6, 28, 7, 6, 24, 8, 6, 24, 9, 6, 24, 10, 6, 28, 11, 6, 24, 12, 6, 24, 13, 6, 24, 14, 6, 1441797, 0, 7, 1048581, 1, 7, 24, 2, 7, 24, 3, 7, 24, 4, 7, 24, 5, 7, 24, 6, 7, 24, 7, 7, 24, 8, 7, 24, 9, 7, 24, 10, 7, 24, 11, 7, 24, 12, 7, 24, 13, 7, 24, 14, 7, 1441814, 0, 8, 1048576, 1, 8, 655365, 2, 8, 655365, 3, 8, 655365, 4, 8, 655365, 5, 8, 655367, 6, 8, 34, 7, 8, 655394, 8, 8, 655366, 9, 8, 655365, 10, 8, 655365, 11, 8, 655365, 12, 8, 655365, 13, 8, 655365, 14, 8, 655360, 5, 9, 1048581, 6, 9, 25, 7, 9, 25, 8, 9, 1441797, 5, 10, 1048594, 6, 10, 25, 7, 10, 25, 8, 10, 1441810, 5, 11, 1048581, 6, 11, 28, 7, 11, 28, 8, 11, 1441797, 5, 12, 1048581, 6, 12, 25, 7, 12, 25, 8, 12, 1441797, 2, 13, 0, 3, 13, 5, 4, 13, 5, 5, 13, 9, 6, 13, 25, 7, 13, 25, 8, 13, 1441801, 9, 13, 5, 10, 13, 5, 11, 13, 1441792, 2, 14, 1048581, 3, 14, 24, 4, 14, 24, 5, 14, 24, 6, 14, 25, 7, 14, 25, 8, 14, 24, 9, 14, 24, 10, 14, 24, 11, 14, 1441797, 2, 15, 1048597, 3, 15, 24, 4, 15, 24, 5, 15, 24, 6, 15, 26, 7, 15, 26, 8, 15, 24, 9, 15, 24, 10, 15, 24, 11, 15, 1441813, 2, 16, 1048581, 3, 16, 24, 4, 16, 24, 5, 16, 28, 6, 16, 24, 7, 16, 24, 8, 16, 28, 9, 16, 24, 10, 16, 24, 11, 16, 1441797, 2, 17, 1048576, 3, 17, 655365, 4, 17, 655365, 5, 17, 655365, 6, 17, 655365, 7, 17, 655365, 8, 17, 655365, 9, 17, 655365, 10, 17, 655365, 11, 17, 655360)
+"cells": PackedInt32Array(0, 0, 0, 1, 0, 5, 2, 0, 5, 3, 0, 23, 4, 0, 5, 5, 0, 5, 6, 0, 5, 7, 0, 23, 8, 0, 5, 9, 0, 5, 10, 0, 5, 11, 0, 23, 12, 0, 5, 13, 0, 5, 14, 0, 1441792, 0, 1, 1048581, 1, 1, 27, 2, 1, 27, 3, 1, 27, 4, 1, 27, 5, 1, 27, 6, 1, 27, 7, 1, 27, 8, 1, 27, 9, 1, 27, 10, 1, 27, 11, 1, 27, 12, 1, 27, 13, 1, 1441819, 14, 1, 1441797, 0, 2, 1048594, 1, 2, 24, 2, 2, 28, 3, 2, 24, 4, 2, 24, 5, 2, 24, 6, 2, 24, 7, 2, 24, 8, 2, 24, 9, 2, 24, 10, 2, 28, 11, 2, 24, 12, 2, 24, 13, 2, 24, 14, 2, 1441810, 0, 3, 1048581, 1, 3, 24, 2, 3, 24, 3, 3, 24, 4, 3, 24, 5, 3, 24, 6, 3, 24, 7, 3, 24, 8, 3, 24, 9, 3, 24, 10, 3, 24, 11, 3, 24, 12, 3, 24, 13, 3, 24, 14, 3, 1441797, 0, 4, 1048590, 1, 4, 24, 2, 4, 24, 3, 4, 24, 4, 4, 24, 5, 4, 24, 6, 4, 24, 7, 4, 24, 8, 4, 24, 9, 4, 24, 10, 4, 24, 11, 4, 24, 12, 4, 24, 13, 4, 24, 14, 4, 1441806, 0, 5, 1048581, 1, 5, 24, 2, 5, 24, 3, 5, 24, 4, 5, 24, 5, 5, 24, 6, 5, 24, 7, 5, 24, 8, 5, 24, 9, 5, 24, 10, 5, 24, 11, 5, 24, 12, 5, 24, 13, 5, 24, 14, 5, 1441797, 0, 6, 1048581, 1, 6, 24, 2, 6, 28, 3, 6, 24, 4, 6, 24, 5, 6, 24, 6, 6, 28, 7, 6, 24, 8, 6, 24, 9, 6, 24, 10, 6, 28, 11, 6, 24, 12, 6, 24, 13, 6, 24, 14, 6, 1441797, 0, 7, 1048581, 1, 7, 24, 2, 7, 24, 3, 7, 24, 4, 7, 24, 5, 7, 24, 6, 7, 24, 7, 7, 24, 8, 7, 24, 9, 7, 24, 10, 7, 24, 11, 7, 24, 12, 7, 24, 13, 7, 24, 14, 7, 1441814, 0, 8, 1048576, 1, 8, 655365, 2, 8, 655365, 3, 8, 655365, 4, 8, 655365, 5, 8, 655367, 6, 8, 30, 7, 8, 655390, 8, 8, 655366, 9, 8, 655365, 10, 8, 655365, 11, 8, 655365, 12, 8, 655365, 13, 8, 655365, 14, 8, 655360, 5, 9, 1048581, 6, 9, 24, 7, 9, 25, 8, 9, 1441797, 5, 10, 1048581, 6, 10, 24, 7, 10, 25, 8, 10, 1441797, 5, 11, 1048581, 6, 11, 24, 7, 11, 25, 8, 11, 1441797, 5, 12, 1048581, 6, 12, 24, 7, 12, 25, 8, 12, 1441797, 2, 13, 0, 3, 13, 5, 4, 13, 5, 5, 13, 9, 6, 13, 24, 7, 13, 25, 8, 13, 1441801, 9, 13, 5, 10, 13, 5, 11, 13, 1441792, 2, 14, 1048581, 3, 14, 24, 4, 14, 24, 5, 14, 24, 6, 14, 24, 7, 14, 24, 8, 14, 24, 9, 14, 24, 10, 14, 24, 11, 14, 1441797, 2, 15, 1048597, 3, 15, 24, 4, 15, 24, 5, 15, 24, 6, 15, 24, 7, 15, 24, 8, 15, 26, 9, 15, 26, 10, 15, 24, 11, 15, 1441813, 2, 16, 1048581, 3, 16, 24, 4, 16, 24, 5, 16, 28, 6, 16, 24, 7, 16, 24, 8, 16, 28, 9, 16, 24, 10, 16, 24, 11, 16, 1441797, 2, 17, 1048576, 3, 17, 655365, 4, 17, 655365, 5, 17, 655365, 6, 17, 655365, 7, 17, 655365, 8, 17, 655365, 9, 17, 655365, 10, 17, 655365, 11, 17, 655360)
 }
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_6eehy")
+[node name="Trim" type="GridMap" parent="."]
+mesh_library = ExtResource("3_6eehy")
+cell_octant_size = 4
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(0, 0, 0, 65536, 0, 28, 1, 0, 5, 65537, 0, 42, 2, 0, 5, 65538, 0, 33, 3, 0, 5, 65539, 0, 33, 4, 0, 5, 65540, 0, 33, 5, 0, 5, 65541, 0, 33, 6, 0, 5, 65542, 0, 33, 7, 0, 5, 65543, 0, 33, 8, 0, 5, 65544, 0, 33, 9, 0, 5, 65545, 0, 33, 10, 0, 5, 65546, 0, 33, 11, 0, 5, 65547, 0, 33, 12, 0, 5, 65548, 0, 33, 13, 0, 5, 65549, 0, 42, 14, 0, 1441792, 65550, 0, 1441820, 0, 1, 1048581, 65536, 1, 1048609, 14, 1, 1441797, 65550, 1, 1441825, 0, 2, 1048581, 65536, 2, 1048609, 14, 2, 1441797, 65550, 2, 1441825, 0, 3, 1048581, 65536, 3, 1048609, 14, 3, 1441797, 65550, 3, 1441825, 0, 4, 1048581, 65536, 4, 1048609, 14, 4, 1441797, 65550, 4, 1441825, 0, 5, 1048581, 65536, 5, 1048609, 14, 5, 1441797, 65550, 5, 1441825, 0, 6, 1048581, 65536, 6, 1048609, 14, 6, 1441797, 65550, 6, 1441825, 0, 7, 1048581, 65536, 7, 1048609, 14, 7, 1441797, 65550, 7, 1441825, 0, 8, 1048576, 65536, 8, 1048604, 1, 8, 655365, 65537, 8, 655393, 2, 8, 655365, 65538, 8, 655393, 3, 8, 655365, 65539, 8, 655393, 4, 8, 655365, 65540, 8, 655393, 5, 8, 655367, 65541, 8, 655395, 8, 8, 655366, 65544, 8, 655394, 9, 8, 655365, 65545, 8, 655393, 10, 8, 655365, 65546, 8, 655393, 11, 8, 655365, 65547, 8, 655393, 12, 8, 655365, 65548, 8, 655393, 13, 8, 655365, 65549, 8, 655393, 14, 8, 655360, 65550, 8, 655388, 5, 9, 1048581, 65541, 9, 1048609, 8, 9, 1441797, 65544, 9, 1441825, 5, 10, 1048581, 65541, 10, 1048618, 8, 10, 1441797, 65544, 10, 1441825, 5, 11, 1048581, 65541, 11, 1048609, 8, 11, 1441797, 65544, 11, 1441835, 5, 12, 1048581, 65541, 12, 1048609, 8, 12, 1441797, 65544, 12, 1441825, 2, 13, 0, 65538, 13, 28, 3, 13, 5, 65539, 13, 33, 4, 13, 5, 65540, 13, 33, 5, 13, 9, 65541, 13, 37, 8, 13, 1441801, 65544, 13, 1441829, 9, 13, 5, 65545, 13, 33, 10, 13, 5, 65546, 13, 33, 11, 13, 1441792, 65547, 13, 1441820, 2, 14, 1048581, 65538, 14, 1048609, 11, 14, 1441797, 65547, 14, 1441825, 2, 15, 1048581, 65538, 15, 1048609, 11, 15, 1441797, 65547, 15, 1441825, 2, 16, 1048581, 65538, 16, 1048609, 11, 16, 1441797, 65547, 16, 1441825, 2, 17, 1048576, 65538, 17, 1048604, 3, 17, 655365, 65539, 17, 655393, 4, 17, 655365, 65540, 17, 655393, 5, 17, 655365, 65541, 17, 655393, 6, 17, 655365, 65542, 17, 655393, 7, 17, 655365, 65543, 17, 655393, 8, 17, 655365, 65544, 17, 655393, 9, 17, 655365, 65545, 17, 655393, 10, 17, 655365, 65546, 17, 655393, 11, 17, 655360, 65547, 17, 655388)
+}
 
-[node name="Player" type="CharacterBody3D" parent="." instance=ExtResource("3_77pwf")]
+[node name="Props" type="GridMap" parent="."]
+mesh_library = ExtResource("4_k0tjh")
+cell_size = Vector3(2, 4, 2)
+cell_octant_size = 4
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(5, 3, 8, 9, 3, 8, 1, 4, 6, 2, 4, 6, 3, 4, 6, 4, 4, 6, 5, 4, 6, 6, 4, 6, 7, 4, 6, 8, 4, 6, 9, 4, 6, 10, 4, 6, 11, 4, 6, 12, 4, 6, 13, 4, 6, 6, 9, 0, 6, 10, 2, 6, 11, 2, 6, 12, 2, 6, 13, 2, 3, 14, 655365, 6, 14, 1048577, 7, 14, 1441792, 3, 16, 5)
+}
+
+[node name="Clutter" type="Node3D" parent="."]
+
+[node name="Crate" type="StaticBody3D" parent="Clutter" instance=ExtResource("5_8i8ys")]
+transform = Transform3D(0.9961947, 0, 0.08715574, 0, 1, 0, -0.08715574, 0, 0.9961947, 11, 0, 11)
+
+[node name="CrateStack" type="StaticBody3D" parent="Clutter" instance=ExtResource("6_y0nbg")]
+transform = Transform3D(0.9975641, 0, 0.06975647, 0, 1, 0, -0.06975647, 0, 0.9975641, 21, 0, 11)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_2y21t")
+
+[node name="Player" type="CharacterBody3D" parent="." instance=ExtResource("7_ot4tr")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 15)
 collision_layer = 2
 collision_mask = 5
-script = ExtResource("4_lktwm")
+script = ExtResource("8_yomx0")
 
 [node name="Enemies" type="Node3D" parent="."]
 
@@ -86,14 +116,6 @@ omni_range = 9.0
 omni_attenuation = 1.4
 
 [node name="Light_floor_light2" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 5)
-light_color = Color(1, 0.9, 0.76, 1)
-light_energy = 2.6
-shadow_enabled = true
-omni_range = 9.0
-omni_attenuation = 1.4
-
-[node name="Light_floor_light3" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.6, 5)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
@@ -108,7 +130,7 @@ light_energy = 0.9
 omni_range = 5.5
 omni_attenuation = 1.4
 
-[node name="Light_floor_light4" type="OmniLight3D" parent="Baked"]
+[node name="Light_floor_light3" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
@@ -116,7 +138,7 @@ shadow_enabled = true
 omni_range = 9.0
 omni_attenuation = 1.4
 
-[node name="Light_floor_light5" type="OmniLight3D" parent="Baked"]
+[node name="Light_floor_light4" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
@@ -124,7 +146,7 @@ shadow_enabled = true
 omni_range = 9.0
 omni_attenuation = 1.4
 
-[node name="Light_floor_light6" type="OmniLight3D" parent="Baked"]
+[node name="Light_floor_light5" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
@@ -132,51 +154,21 @@ shadow_enabled = true
 omni_range = 9.0
 omni_attenuation = 1.4
 
-[node name="Door" type="Node3D" parent="Baked" instance=ExtResource("5_bodbi")]
+[node name="Door" type="Node3D" parent="Baked" instance=ExtResource("9_c6ysg")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 17)
-script = ExtResource("6_lapnv")
-slab_mesh = ExtResource("7_o3jvf")
+script = ExtResource("10_blpko")
+slab_mesh = ExtResource("11_gs5p8")
 open_offset = Vector3(-1.72, 0, 0)
 slab_width = 1.75
 slab_center_x = 0.125
 
-[node name="Door2" type="Node3D" parent="Baked" instance=ExtResource("5_bodbi")]
+[node name="Door2" type="Node3D" parent="Baked" instance=ExtResource("9_c6ysg")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 15, 0, 17)
-script = ExtResource("6_lapnv")
-slab_mesh = ExtResource("7_o3jvf")
+script = ExtResource("10_blpko")
+slab_mesh = ExtResource("11_gs5p8")
 open_offset = Vector3(-1.72, 0, 0)
 slab_width = 1.75
 slab_center_x = 0.125
-
-[node name="Light_wall_light3" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.85, 2.9, 21)
-light_color = Color(0.35, 0.88, 1, 1)
-light_energy = 0.9
-omni_range = 5.5
-omni_attenuation = 1.4
-
-[node name="Light_wall_light4" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.15, 2.9, 21)
-light_color = Color(0.35, 0.88, 1, 1)
-light_energy = 0.9
-omni_range = 5.5
-omni_attenuation = 1.4
-
-[node name="Light_floor_light7" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 23)
-light_color = Color(1, 0.9, 0.76, 1)
-light_energy = 2.6
-shadow_enabled = true
-omni_range = 9.0
-omni_attenuation = 1.4
-
-[node name="Light_floor_light8" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 3.6, 23)
-light_color = Color(1, 0.9, 0.76, 1)
-light_energy = 2.6
-shadow_enabled = true
-omni_range = 9.0
-omni_attenuation = 1.4
 
 [node name="Light_wall_lamp" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.65, 2.75, 31)
@@ -186,14 +178,14 @@ omni_range = 5.5
 omni_attenuation = 1.4
 
 [node name="Light_floor_grate" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.35, 31)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.35, 31)
 light_color = Color(0.25, 0.8, 1, 1)
 light_energy = 0.3
 omni_range = 2.5
 omni_attenuation = 1.4
 
 [node name="Light_floor_grate2" type="OmniLight3D" parent="Baked"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.35, 31)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0.35, 31)
 light_color = Color(0.25, 0.8, 1, 1)
 light_energy = 0.3
 omni_range = 2.5
@@ -206,7 +198,7 @@ light_energy = 1.6
 omni_range = 5.5
 omni_attenuation = 1.4
 
-[node name="Light_floor_light9" type="OmniLight3D" parent="Baked"]
+[node name="Light_floor_light6" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 3.6, 33)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
@@ -214,13 +206,43 @@ shadow_enabled = true
 omni_range = 9.0
 omni_attenuation = 1.4
 
-[node name="Light_floor_light10" type="OmniLight3D" parent="Baked"]
+[node name="Light_floor_light7" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 3.6, 33)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
 shadow_enabled = true
 omni_range = 9.0
 omni_attenuation = 1.4
+
+[node name="Light_chamfer_light" type="OmniLight3D" parent="Baked"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.3, 2.1)
+light_color = Color(0.55, 0.9, 1, 1)
+light_energy = 2.4
+omni_range = 8.5
+omni_attenuation = 1.4
+
+[node name="Light_chamfer_light2" type="OmniLight3D" parent="Baked"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 3.3, 2.1)
+light_color = Color(0.55, 0.9, 1, 1)
+light_energy = 2.4
+omni_range = 8.5
+omni_attenuation = 1.4
+
+[node name="Light_chamfer_light3" type="OmniLight3D" parent="Baked"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.1, 3.3, 21)
+light_color = Color(0.55, 0.9, 1, 1)
+light_energy = 2.4
+omni_range = 8.5
+omni_attenuation = 1.4
+
+[node name="Light_chamfer_light_broken" type="OmniLight3D" parent="Baked"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.9, 3.3, 23)
+light_color = Color(0.55, 0.9, 1, 1)
+light_energy = 1.2
+omni_range = 6.0
+omni_attenuation = 1.4
+script = ExtResource("12_ph6uo")
+base_energy = 1.2
 
 [node name="Shots" type="Node3D" parent="."]
 
@@ -237,7 +259,10 @@ transform = Transform3D(-0.7071068, 0.04932527, -0.70538425, 0, 0.9975641, 0.069
 transform = Transform3D(-1, 4.5753548e-09, -8.7302965e-08, 0, 0.9986295, 0.05233596, 8.742278e-08, 0.05233596, -0.9986295, 15, 1.65, 9)
 
 [node name="e_corridor" type="Marker3D" parent="Shots" groups=["shots"]]
-transform = Transform3D(1, 0, 0, 0, 0.99939084, 0.034899496, 0, -0.034899496, 0.99939084, 15, 1.65, 25)
+transform = Transform3D(1, 0, 0, 0, 0.9975641, -0.06975647, 0, 0.06975647, 0.9975641, 15, 1.65, 27)
 
 [node name="f_end" type="Marker3D" parent="Shots" groups=["shots"]]
-transform = Transform3D(-0.7660445, 0.11161889, -0.6330222, 0, 0.9848077, 0.17364818, 0.6427876, 0.13302223, -0.7544066, 9, 1.65, 29)
+transform = Transform3D(-0.50000006, -0.0905243, 0.8612812, 0, 0.9945219, 0.104528464, -0.8660254, 0.05226424, -0.49726102, 19, 1.65, 29)
+
+[node name="g_light" type="Marker3D" parent="Shots" groups=["shots"]]
+transform = Transform3D(0.34202015, 0.29038098, 0.89370084, 0, 0.95105654, -0.309017, -0.9396926, 0.10569004, 0.32528052, 15, 1.65, 23)

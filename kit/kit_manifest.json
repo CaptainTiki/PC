@@ -1,177 +1,428 @@
-[
- {
-  "id": 0,
-  "name": "wall_corner_in",
-  "note": "Wall profile, open sides mask 0, inside corners mask 1"
- },
- {
-  "id": 1,
-  "name": "wall_auto_0_3",
-  "note": "Wall profile, open sides mask 0, inside corners mask 3"
- },
- {
-  "id": 2,
-  "name": "wall_auto_0_5",
-  "note": "Wall profile, open sides mask 0, inside corners mask 5"
- },
- {
-  "id": 3,
-  "name": "wall_auto_0_7",
-  "note": "Wall profile, open sides mask 0, inside corners mask 7"
- },
- {
-  "id": 4,
-  "name": "wall_auto_0_15",
-  "note": "Wall profile, open sides mask 0, inside corners mask 15"
- },
- {
-  "id": 5,
-  "name": "wall",
-  "note": "Wall profile, open sides mask 1, inside corners mask 0"
- },
- {
-  "id": 6,
-  "name": "wall_auto_1_2",
-  "note": "Wall profile, open sides mask 1, inside corners mask 2"
- },
- {
-  "id": 7,
-  "name": "wall_auto_1_4",
-  "note": "Wall profile, open sides mask 1, inside corners mask 4"
- },
- {
-  "id": 8,
-  "name": "wall_auto_1_6",
-  "note": "Wall profile, open sides mask 1, inside corners mask 6"
- },
- {
-  "id": 9,
-  "name": "wall_corner_out",
-  "note": "Wall profile, open sides mask 3, inside corners mask 0"
- },
- {
-  "id": 10,
-  "name": "wall_auto_3_4",
-  "note": "Wall profile, open sides mask 3, inside corners mask 4"
- },
- {
-  "id": 11,
-  "name": "wall_auto_5_0",
-  "note": "Wall profile, open sides mask 5, inside corners mask 0"
- },
- {
-  "id": 12,
-  "name": "wall_auto_7_0",
-  "note": "Wall profile, open sides mask 7, inside corners mask 0"
- },
- {
-  "id": 13,
-  "name": "wall_auto_15_0",
-  "note": "Wall profile, open sides mask 15, inside corners mask 0"
- },
- {
-  "id": 14,
-  "name": "wall_bulkhead",
-  "note": "Ribbed bulkhead face"
- },
- {
-  "id": 15,
-  "name": "wall_hazard",
-  "note": "Hazard stripes, lower face"
- },
- {
-  "id": 16,
-  "name": "wall_cables",
-  "note": "Cable run, upper face"
- },
- {
-  "id": 17,
-  "name": "wall_rust",
-  "note": "Rusted upper face"
- },
- {
-  "id": 18,
-  "name": "wall_light",
-  "note": "Recessed cyan light strip (bakes an OmniLight)"
- },
- {
-  "id": 19,
-  "name": "wall_vent",
-  "note": "Recessed floor-level vent"
- },
- {
-  "id": 20,
-  "name": "wall_console",
-  "note": "Recessed console screen (bakes dim light)"
- },
- {
-  "id": 21,
-  "name": "wall_lamp",
-  "note": "Red warning lamp (bakes red OmniLight)"
- },
- {
-  "id": 22,
-  "name": "wall_pipes",
-  "note": "Deep pipe bay"
- },
- {
-  "id": 23,
-  "name": "wall_window",
-  "note": "Deep-set window onto space (bakes faint light)"
- },
- {
-  "id": 24,
-  "name": "floor",
-  "note": "Concrete floor + ceiling"
- },
- {
-  "id": 25,
-  "name": "floor_metal",
-  "note": "Tread-plate floor + ceiling"
- },
- {
-  "id": 26,
-  "name": "floor_grate",
-  "note": "Glowing grate floor + ceiling (spawns low light)"
- },
- {
-  "id": 27,
-  "name": "floor_line",
-  "note": "Concrete floor with yellow line on -Z edge"
- },
- {
-  "id": 28,
-  "name": "floor_light",
-  "note": "Concrete floor, recessed ceiling light (spawns OmniLight)"
- },
- {
-  "id": 29,
-  "name": "floor_beam",
-  "note": "Concrete floor, ceiling I-beam along X"
- },
- {
-  "id": 30,
-  "name": "pillar",
-  "note": "Floor with central concrete pillar"
- },
- {
-  "id": 31,
-  "name": "crate",
-  "note": "Floor with one 1.2m crate"
- },
- {
-  "id": 32,
-  "name": "crate_stack",
-  "note": "Floor with stacked crates"
- },
- {
-  "id": 33,
-  "name": "door",
-  "note": "Door frame, passage along Z (bakes a sliding door)"
- },
- {
-  "id": 34,
-  "name": "door_half",
-  "note": "Half of a 2-cell double door, jamb on -X (pair with a 180-rotated twin)"
- }
-]
+{
+ "props": [
+  {
+   "id": 0,
+   "name": "tray_end",
+   "note": "Ceiling cable tray (tray_end), runs along local Z/X"
+  },
+  {
+   "id": 1,
+   "name": "tray_corner",
+   "note": "Ceiling cable tray (tray_corner), runs along local Z/X"
+  },
+  {
+   "id": 2,
+   "name": "tray",
+   "note": "Ceiling cable tray (tray), runs along local Z/X"
+  },
+  {
+   "id": 3,
+   "name": "tray_t",
+   "note": "Ceiling cable tray (tray_t), runs along local Z/X"
+  },
+  {
+   "id": 4,
+   "name": "tray_cross",
+   "note": "Ceiling cable tray (tray_cross), runs along local Z/X"
+  },
+  {
+   "id": 5,
+   "name": "pipes_vertical",
+   "note": "Vertical pipe bundle hugging the +Z edge"
+  },
+  {
+   "id": 6,
+   "name": "beam",
+   "note": "Ceiling I-beam along X (lines up into long beams)"
+  },
+  {
+   "id": 7,
+   "name": "beam_cross",
+   "note": "Ceiling I-beam crossing"
+  },
+  {
+   "id": 8,
+   "name": "pillar",
+   "note": "Structural pillar, cell centre"
+  }
+ ],
+ "structure": [
+  {
+   "id": 0,
+   "name": "wall_corner_in",
+   "note": "Wall face, open sides 0, inside corners 1"
+  },
+  {
+   "id": 1,
+   "name": "wall_auto_0_3",
+   "note": "Wall face, open sides 0, inside corners 3"
+  },
+  {
+   "id": 2,
+   "name": "wall_auto_0_5",
+   "note": "Wall face, open sides 0, inside corners 5"
+  },
+  {
+   "id": 3,
+   "name": "wall_auto_0_7",
+   "note": "Wall face, open sides 0, inside corners 7"
+  },
+  {
+   "id": 4,
+   "name": "wall_auto_0_15",
+   "note": "Wall face, open sides 0, inside corners 15"
+  },
+  {
+   "id": 5,
+   "name": "wall",
+   "note": "Wall face, open sides 1, inside corners 0"
+  },
+  {
+   "id": 6,
+   "name": "wall_auto_1_2",
+   "note": "Wall face, open sides 1, inside corners 2"
+  },
+  {
+   "id": 7,
+   "name": "wall_auto_1_4",
+   "note": "Wall face, open sides 1, inside corners 4"
+  },
+  {
+   "id": 8,
+   "name": "wall_auto_1_6",
+   "note": "Wall face, open sides 1, inside corners 6"
+  },
+  {
+   "id": 9,
+   "name": "wall_corner_out",
+   "note": "Wall face, open sides 3, inside corners 0"
+  },
+  {
+   "id": 10,
+   "name": "wall_auto_3_4",
+   "note": "Wall face, open sides 3, inside corners 4"
+  },
+  {
+   "id": 11,
+   "name": "wall_auto_5_0",
+   "note": "Wall face, open sides 5, inside corners 0"
+  },
+  {
+   "id": 12,
+   "name": "wall_auto_7_0",
+   "note": "Wall face, open sides 7, inside corners 0"
+  },
+  {
+   "id": 13,
+   "name": "wall_auto_15_0",
+   "note": "Wall face, open sides 15, inside corners 0"
+  },
+  {
+   "id": 14,
+   "name": "wall_bulkhead",
+   "note": "Ribbed bulkhead face"
+  },
+  {
+   "id": 15,
+   "name": "wall_hazard",
+   "note": "Hazard stripes, lower face"
+  },
+  {
+   "id": 16,
+   "name": "wall_cables",
+   "note": "Cable run, upper face"
+  },
+  {
+   "id": 17,
+   "name": "wall_rust",
+   "note": "Rusted upper face"
+  },
+  {
+   "id": 18,
+   "name": "wall_light",
+   "note": "Recessed cyan light strip (bakes an OmniLight)"
+  },
+  {
+   "id": 19,
+   "name": "wall_vent",
+   "note": "Recessed floor-level vent"
+  },
+  {
+   "id": 20,
+   "name": "wall_console",
+   "note": "Recessed console screen (bakes dim light)"
+  },
+  {
+   "id": 21,
+   "name": "wall_lamp",
+   "note": "Red warning lamp (bakes red OmniLight)"
+  },
+  {
+   "id": 22,
+   "name": "wall_pipes",
+   "note": "Deep pipe bay"
+  },
+  {
+   "id": 23,
+   "name": "wall_window",
+   "note": "Deep-set window onto space (bakes faint light)"
+  },
+  {
+   "id": 24,
+   "name": "floor",
+   "note": "Deck floor + ceiling"
+  },
+  {
+   "id": 25,
+   "name": "floor_metal",
+   "note": "Tread-plate floor + ceiling"
+  },
+  {
+   "id": 26,
+   "name": "floor_grate",
+   "note": "Glowing grate floor + ceiling (bakes low light)"
+  },
+  {
+   "id": 27,
+   "name": "floor_line",
+   "note": "Deck floor with yellow line on -Z edge"
+  },
+  {
+   "id": 28,
+   "name": "floor_light",
+   "note": "Deck floor, recessed ceiling light (bakes OmniLight)"
+  },
+  {
+   "id": 29,
+   "name": "door",
+   "note": "Door frame, passage along Z (bakes a sliding door)"
+  },
+  {
+   "id": 30,
+   "name": "door_half",
+   "note": "Half of a 2-cell double door, jamb on -X (pair with a 180-rotated twin)"
+  }
+ ],
+ "trim": [
+  {
+   "id": 0,
+   "name": "gutter_corner_in",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 1,
+   "name": "gutter_auto_0_3",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 2,
+   "name": "gutter_auto_0_5",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 3,
+   "name": "gutter_auto_0_7",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 4,
+   "name": "gutter_auto_0_15",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 5,
+   "name": "gutter",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 6,
+   "name": "gutter_auto_1_2",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 7,
+   "name": "gutter_auto_1_4",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 8,
+   "name": "gutter_auto_1_6",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 9,
+   "name": "gutter_corner_out",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 10,
+   "name": "gutter_auto_3_4",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 11,
+   "name": "gutter_auto_5_0",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 12,
+   "name": "gutter_auto_7_0",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 13,
+   "name": "gutter_auto_15_0",
+   "note": "Floor trim: dark grating gutter + kick"
+  },
+  {
+   "id": 14,
+   "name": "gutter_glow_corner_in",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 15,
+   "name": "gutter_glow_auto_0_3",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 16,
+   "name": "gutter_glow_auto_0_5",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 17,
+   "name": "gutter_glow_auto_0_7",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 18,
+   "name": "gutter_glow_auto_0_15",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 19,
+   "name": "gutter_glow",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 20,
+   "name": "gutter_glow_auto_1_2",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 21,
+   "name": "gutter_glow_auto_1_4",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 22,
+   "name": "gutter_glow_auto_1_6",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 23,
+   "name": "gutter_glow_corner_out",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 24,
+   "name": "gutter_glow_auto_3_4",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 25,
+   "name": "gutter_glow_auto_5_0",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 26,
+   "name": "gutter_glow_auto_7_0",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 27,
+   "name": "gutter_glow_auto_15_0",
+   "note": "Floor trim: gutter with glowing slots"
+  },
+  {
+   "id": 28,
+   "name": "chamfer_corner_in",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 29,
+   "name": "chamfer_auto_0_3",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 30,
+   "name": "chamfer_auto_0_5",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 31,
+   "name": "chamfer_auto_0_7",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 32,
+   "name": "chamfer_auto_0_15",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 33,
+   "name": "chamfer",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 34,
+   "name": "chamfer_auto_1_2",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 35,
+   "name": "chamfer_auto_1_4",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 36,
+   "name": "chamfer_auto_1_6",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 37,
+   "name": "chamfer_corner_out",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 38,
+   "name": "chamfer_auto_3_4",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 39,
+   "name": "chamfer_auto_5_0",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 40,
+   "name": "chamfer_auto_7_0",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 41,
+   "name": "chamfer_auto_15_0",
+   "note": "Ceiling trim (paint in the y=1 slot): plain chamfer"
+  },
+  {
+   "id": 42,
+   "name": "chamfer_light",
+   "note": "Ceiling trim: chamfer with light bar (bakes an OmniLight)"
+  },
+  {
+   "id": 43,
+   "name": "chamfer_light_broken",
+   "note": "Ceiling trim: chamfer with a failing light bar (bakes a flickering light)"
+  }
+ ]
+}

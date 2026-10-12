@@ -2,21 +2,23 @@
 
 Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 
-## Grid kit rules
-- Cell = 2m x 4m x 2m. GridMap `cell_size = (2,4,2)`, `cell_center_y = false`.
+## Grid kit: three GridMaps on one grid
+| Grid | Cell | Library | Holds |
+|---|---|---|---|
+| `Grid` (structure) | 2x4x2 | kit/structure.meshlib.res | wall faces, floors, doors |
+| `Trim` | 2x2x2 | kit/trim.meshlib.res | slot y=0: floor trim (gutter, gutter_glow) · slot y=1: ceiling trim (chamfer, chamfer_light, chamfer_light_broken) |
+| `Props` | 2x4x2 | kit/props.meshlib.res | runs that tile: tray (end/straight/corner/T/cross), pipes_vertical, beam, beam_cross, pillar |
+
 - Every piece lives strictly inside its cell.
-- Walls are single-sided profile pieces: gutter grating -> kick -> face -> chamfer.
-  The face sits 0.75m back from the room-side edge; the profile lands on floor and
-  ceiling height at the edge, so it meets any floor cell. Hidden faces are never drawn.
-- Wall pieces exist for every combination of open sides + inside corners
-  (`wall`, `wall_corner_in`, `wall_corner_out`, `wall_auto_<sides>_<corners>`).
-  The ASCII builder picks the right one and rotation automatically.
-- Feature walls (light, vent, console, lamp, pipes, window, hazard, cables, rust,
-  bulkhead) are straight pieces facing +Z.
-- Rooms are separated by at least one wall cell; wall cells with no open neighbour
-  are left empty.
-- Floor cells carry their own floor + ceiling. Doors sit in the wall line.
-- Light/door cells get real lights/doors via the Level "Bake" button.
+- Wall faces sit 0.75m back from the room-side cell edge (local z = +0.25). The trim
+  profile (gutter -> kick, chamfer) lands on floor/ceiling height at the edge.
+  Without trim a wall still closes with a hard 90 degree edge.
+- Wall and trim pieces exist for every combination of open sides + inside corners:
+  `<name>`, `<name>_corner_in`, `<name>_corner_out`, `<name>_auto_<sides>_<corners>`.
+  Lit/broken chamfers and feature walls are straight-only.
+- Rooms are separated by at least one wall cell; wall cells with no open neighbour stay empty.
+- Crates and other one-off clutter are free-placed scenes (scenes/props/).
+- Lights and doors become real nodes via the Level "Bake" button.
 
 ## Pipeline
     tools/rebuild_and_shoot.sh [level]   # textures -> kit -> level -> screenshots
@@ -26,10 +28,9 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 - Capture: run a level with `-- --capture` to render every Marker3D in group `shots`.
 
 ## ASCII legend
-Walls: `#` wall `C` bulkhead `O` window `H` hazard `W` cables `U` rust `L` light `V` vent `K` console `R` red lamp `P` pipes
-Floors: `.` concrete `,` metal `=` grate `_` yellow line `*` ceiling light `-` beam `o` pillar `x` crate `X` crate stack `D` door (two side-by-side `DD` = sliding double door) `@` player start
-
-Layout rule of thumb: corridors at least 2 cells (4m) wide; glowing grate is an accent, not a floor.
+See the header of `tools/build_level.gd`. Walls `#` plain, `!` lit chamfer, `?` broken
+light, `%` glowing gutter, features `C H W U L V K R P O`; floors `. , = _ *`;
+props `o - + t p`; clutter `x X`; `D` door, `@` start, `e` Drifter.
 
 ## Gameplay (vertical slice core)
 - Controls: WASD move, mouse look, LMB fire, Esc release mouse.
