@@ -12,7 +12,7 @@ collision_mask = 2
 monitorable = false
 script = ExtResource("1")
 kind = "cells"
-amount = 10
+amount = 15
 
 [node name="Shape" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)

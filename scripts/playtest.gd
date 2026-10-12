@@ -5,7 +5,7 @@ extends Node
 ## live enemy, aims, fires when lined up. Captures screenshots at key moments
 ## to res://shots/play_*.png and prints a combat log, then quits.
 
-const MAX_TIME := 240.0
+const MAX_TIME := 180.0
 const MAX_SHOTS := 14
 
 var player: Player
@@ -77,10 +77,33 @@ func _physics_process(delta: float) -> void:
 	if ex:
 		exit_done = ex.done
 	if (live.is_empty() and ex == null) or exit_done or player.dead or t > MAX_TIME:
+		if not _end_shot:
+			_end_shot = true
+			shots_taken = mini(shots_taken, MAX_SHOTS - 1)
+			_queue(0.4, "end")
 		if capture_queue.is_empty():
 			_finish(live.size())
 		player.intent.fire = false
 		player.intent.move = Vector2.ZERO
+		return
+	_log_t += delta
+	if _log_t > 5.0:
+		_log_t = 0.0
+		var lv := get_tree().current_scene as Level
+		var cc := lv.grid.local_to_map(player.global_position) if lv else Vector3i.ZERO
+		_log("pos cell %d,%d  live %d" % [cc.x, cc.z, live.size()])
+	_stuck_t += delta
+	if _stuck_t > 4.0:
+		if player.global_position.distance_to(_stuck_pos) < 1.0:
+			_log("stuck at %s, sidestepping" % str(player.global_position))
+			_unstick = 0.8
+			_unstick_side = -_unstick_side
+		_stuck_pos = player.global_position
+		_stuck_t = 0.0
+	if _unstick > 0.0:
+		_unstick -= delta
+		player.intent.move = Vector2(_unstick_side, 0.6)
+		player.intent.fire = false
 		return
 	# target: nearest live enemy we can actually see (within 22m)
 	var head := player.head.global_position
@@ -143,6 +166,12 @@ func _process(_d: float) -> void:
 			_capture(item[1])
 
 var _prev_hp := 100.0
+var _stuck_pos := Vector3.ZERO
+var _stuck_t := 0.0
+var _log_t := 0.0
+var _unstick := 0.0
+var _end_shot := false
+var _unstick_side := 1.0
 var _busy := false
 
 func _capture(tag: String) -> void:

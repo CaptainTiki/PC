@@ -31,6 +31,9 @@ var mat: ShaderMaterial
 var strafe_dir := 1.0
 var sight_t := 0.0
 var sees := false
+var blocked_t := 0.0
+var unstick_t := 0.0
+var unstick_dir := Vector3.ZERO
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -169,6 +172,19 @@ func _steer(delta: float, dist: float, speed_scale := 1.0) -> void:
 				push = -0.7
 		want = (fwd * push + side * (0.45 if sees else 0.0)).normalized() * data.move_speed
 	want *= speed_scale
+	# unstick: pushing hard but barely moving -> sidestep for a moment
+	if unstick_t > 0.0:
+		unstick_t -= delta
+		want = unstick_dir * data.move_speed
+	elif want.length() > 1.0 and _flat(get_real_velocity()).length() < want.length() * 0.2:
+		blocked_t += delta
+		if blocked_t > 0.4:
+			blocked_t = 0.0
+			unstick_t = 0.5
+			var f := want.normalized()
+			unstick_dir = (Vector3(-f.z, 0, f.x) * (1.0 if rng.randf() < 0.5 else -1.0) - f * 0.5).normalized()
+	else:
+		blocked_t = 0.0
 	if data.movement == "fly":
 		var bob := sin(anim_t * 2.2) * 0.25
 		want.y = (home_y + bob - global_position.y) * 3.0

@@ -26,10 +26,11 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 
 func _on_body(b: Node) -> void:
-	if b == source:
+	var src: Node = source if is_instance_valid(source) else null
+	if src != null and b == src:
 		return
 	if b.has_method("take_hit"):
-		b.take_hit(damage, global_position, velocity.normalized(), source)
+		b.take_hit(damage, global_position, velocity.normalized(), src)
 	if impact_fx:
 		var fx: Node3D = impact_fx.instantiate()
 		get_tree().current_scene.add_child(fx)

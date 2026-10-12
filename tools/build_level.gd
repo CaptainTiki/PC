@@ -111,7 +111,7 @@ func new_grid(name: String, lib_path: String, cell: Vector3, root: Node) -> Grid
 	g.mesh_library = load(lib_path)
 	g.cell_size = cell
 	g.cell_center_y = false
-	g.cell_octant_size = 4
+	g.cell_octant_size = 2
 	root.add_child(g)
 	g.owner = root
 	return g

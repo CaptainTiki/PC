@@ -30,14 +30,24 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 ## ASCII legend
 See the header of `tools/build_level.gd`. Walls `#` plain, `!` lit chamfer, `?` broken
 light, `%` glowing gutter, features `C H W U L V K R P O`; floors `. , = _ *`;
-props `o - + t p`; clutter `x X`; `D` door, `@` start, `e` Drifter.
+props `o - + t p`; clutter `x X`; `D` door, `@` start, `e` Drifter, `s` Skitter,
+`h` health, `a` cells, `E` exit. After the map: `[damage]` zones (dim/flickering
+lights, patchy trim) and `[shots]` screenshot markers.
+
+## Levels
+- `levels/wing01` — Collider control wing (main scene). Arrival bay -> control room ->
+  cargo bay -> damaged corridor -> pipe gallery -> airlock -> breach chamber (exit).
+  23 anomalies; bot clears it in ~55s at 80 hull.
 
 ## Gameplay (vertical slice core)
 - Controls: WASD move, mouse look, LMB fire, Esc release mouse.
 - `Player` (scenes/actors/player.tscn) — reads `PlayerInput` intent only; damage via `take_hit()`.
 - `Weapon` + `WeaponData` (data/scattergun.tres) — hitscan pellets, tracers, impact FX.
-- `Enemy` + `EnemyData` (data/drifter.tres) — flat billboard sprite (art/sprites), floats,
-  keeps range, fires slow `Projectile` orbs; `take_hit()` chokepoint; shard burst on death.
+- `Enemy` + `EnemyData` — flat billboard sprites (art/sprites); `take_hit()` chokepoint.
+  - Drifter (data/drifter.tres): flies, keeps range, fires slow orbs.
+  - Skitter (data/skitter.tres): ground pack melee, lunges, alerts nearby allies.
+  - Out of sight, enemies follow the Level's grid flow field (round corners, through doors).
+- Pickups: health +25, cells +15 (scenes/props/pickup_*.tscn). Exit: scenes/props/exit.tscn.
 - Level map chars: `@` player start, `e` Drifter spawn.
 - Lights/doors are baked into the scene (Level inspector button "Bake"),
   nothing is generated at runtime.

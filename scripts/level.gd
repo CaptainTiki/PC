@@ -14,7 +14,7 @@ extends Node3D
 
 const LIGHTS := {
 	# item name: [local offset (before cell rotation), color, energy, range, shadow]
-	"floor_light": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 2.6, 9.0, true],
+	"floor_light": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 2.6, 9.0, false],
 	"wall_light": [Vector3(0, 2.9, 0.85), Color(0.35, 0.88, 1.0), 0.9, 5.5, false],
 	"wall_lamp": [Vector3(0, 2.75, 0.65), Color(1.0, 0.22, 0.15), 1.6, 5.5, false],
 	"wall_console": [Vector3(0, 1.8, 0.65), Color(0.3, 0.85, 1.0), 0.6, 3.5, false],
@@ -95,6 +95,9 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			l.light_energy = d[2]
 			l.omni_range = d[3]
 			l.omni_attenuation = 1.4
+			l.distance_fade_enabled = true
+			l.distance_fade_begin = 30.0
+			l.distance_fade_length = 10.0
 			l.shadow_enabled = d[4]
 			var hurt := false
 			for z in damaged_zones:
