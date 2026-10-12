@@ -29,6 +29,7 @@
   "beam": 20,
   "chamfer": 21,
   "kick": 22,
-  "window": 23
+  "gutter": 23,
+  "window": 24
  }
 }

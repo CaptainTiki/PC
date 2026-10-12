@@ -1,0 +1,8 @@
+[ 2.58] kill #1
+[ 4.13] player hit -> 90
+[ 4.15] kill #2
+[ 5.05] player hit -> 80
+[ 8.08] kill #3
+[ 8.90] kill #4
+[ 9.77] kill #5
+[10.22] DONE  time=10.2s shots=9 kills=5 remaining=0 hp=80

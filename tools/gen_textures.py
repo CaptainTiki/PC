@@ -411,11 +411,9 @@ def chamfer():
 def kick():
     s = 0.24 + (vnoise(4) - 0.5) * 0.06
     s = bevel(s, 0, 0, T, T, 0.12, 0.2, 1)
-    rgb = quant(s, "steel")
-    em = np.zeros((T, T, 3), np.float32)
-    for x in (14, 46):                               # amber guide lights
-        rgb[40:44, x:x + 4] = RAMPS["orange"][5]; em[40:44, x:x + 4] = RAMPS["orange"][5]
-    return rgb, em
+    for x in (4, 59):
+        bolt(s, x, 40)
+    return quant(s, "steel")
 
 
 def window():
@@ -433,6 +431,18 @@ def window():
             for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 rgb[(y + dy) % T, (x + dx) % T] = c * 0.5; em[(y + dy) % T, (x + dx) % T] = c * 0.5
     return rgb, em
+
+
+
+def gutter():
+    # dark service grating that runs along the foot of every wall
+    s = np.full((T, T), 0.30) + (vnoise(4, octaves=2) - 0.5) * 0.06
+    slots = ((X % 6) >= 2) & ((Y % 16) >= 2) & ((Y % 16) < 14)
+    s[slots] = 0.02
+    s[((X % 6) == 1) & slots.any(axis=0)[None, :].repeat(T, 0)] += 0.0
+    s[(Y % 16) == 1] += 0.12
+    s[(Y % 16) == 14] -= 0.1
+    return quant(s, "steel")
 
 
 # ---- register (order = atlas index; keep stable once levels exist) --------
@@ -458,7 +468,8 @@ add("wall_cables", wall_cables())
 add("rust_plate", rust_plate())
 add("beam", beam())
 add("chamfer", *chamfer())
-add("kick", *kick())
+add("kick", kick())
+add("gutter", gutter())
 add("window", *window())
 
 rows = (len(tiles) + COLS - 1) // COLS

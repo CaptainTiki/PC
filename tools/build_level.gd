@@ -3,7 +3,10 @@ extends SceneTree
 ## Run: godot --headless --path . -s tools/build_level.gd -- levels/test_room.txt
 ## Output: levels/<name>.tscn (fully editable GridMap afterwards).
 ##
-## Wall features and floor lines auto-rotate to face the nearest open cell.
+## Walls auto-tile: each wall cell gets the profile piece matching its open sides
+## and inside corners (see tools/build_kit.gd), rotated into place. Wall cells with
+## no open neighbours (solid interior) are left empty. Feature walls (L, V, K...)
+## need exactly one open side; otherwise they fall back to a plain auto piece.
 
 const LEGEND := {
 	"#": "wall", "C": "wall_bulkhead", "O": "wall_window", "H": "wall_hazard", "W": "wall_cables", "U": "wall_rust",
@@ -25,6 +28,47 @@ func is_open(s: String) -> bool:
 
 func is_wall(s: String) -> bool:
 	return WALL_CHARS.contains(s)
+
+# DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
+const MDIRS := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
+const NAMED := {"1_0": "wall", "3_0": "wall_corner_out", "0_1": "wall_corner_in"}
+
+func opens(c: int, r: int) -> bool:
+	# for wall signatures: walkable floor only (doors count as wall)
+	var s := ch(c, r)
+	return s != " " and not WALL_CHARS.contains(s) and s != "D"
+
+func rot_mask(m: int, k: int) -> int:
+	var out := 0
+	for i in 4:
+		if m & (1 << i):
+			out |= 1 << ((i + k) % 4)
+	return out
+
+func canonical(sides: int, diag: int) -> Array:
+	var best := [999, 0, 0, 0]
+	for k in 4:
+		var key := rot_mask(sides, k) * 16 + rot_mask(diag, k)
+		if key < best[0]:
+			best = [key, rot_mask(sides, k), rot_mask(diag, k), k]
+	return best
+
+func wall_signature(c: int, r: int) -> Array:
+	var sides := 0
+	var diag := 0
+	for i in 4:
+		var d: Vector2i = MDIRS[i]
+		if opens(c + d.x, r + d.y):
+			sides |= 1 << i
+	for j in 4:
+		var a: Vector2i = MDIRS[j]
+		var b: Vector2i = MDIRS[(j + 1) % 4]
+		if not (sides & (1 << j)) and not (sides & (1 << ((j + 1) % 4))) and opens(c + a.x + b.x, r + a.y + b.y):
+			diag |= 1 << j
+	return [sides, diag]
+
+func orient_k(k: int, grid: GridMap) -> int:
+	return grid.get_orthogonal_index_from_basis(Basis(Vector3.UP, k * PI / 2.0))
 
 func orient_for(dir: Vector2i, grid: GridMap) -> int:
 	# rotate so local +Z points along dir (x=col, y=row)
@@ -65,11 +109,21 @@ func _init() -> void:
 				continue
 			var item: String = LEGEND[s]
 			var ori := 0
-			if is_wall(s) and s != "#" and s != "C":
-				for d in dirs:
-					if is_open(ch(c + d.x, r + d.y)):
-						ori = orient_for(d, grid)
-						break
+			if is_wall(s):
+				var sig := wall_signature(c, r)
+				if sig[0] == 0 and sig[1] == 0:
+					continue                                   # solid interior: draw nothing
+				var feature := s != "#"
+				if feature and sig[1] == 0 and [1, 2, 4, 8].has(sig[0]):
+					ori = orient_k([1, 2, 4, 8].find(sig[0]), grid)   # straight feature piece
+				else:
+					if feature:
+						push_warning("feature wall '%s' at %d,%d isn't a straight run; using plain wall" % [s, c, r])
+					var cn := canonical(sig[0], sig[1])
+					var key := "%d_%d" % [cn[1], cn[2]]
+					item = NAMED.get(key, "wall_auto_" + key)
+					# canonical = rot(actual, k)  ->  actual = rot(canonical, 4-k)
+					ori = orient_k((4 - int(cn[3])) % 4, grid)
 			elif s == "_":
 				for d in dirs:   # line goes on the -Z edge -> point -Z at the wall
 					if is_wall(ch(c + d.x, r + d.y)):

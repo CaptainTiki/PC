@@ -5,10 +5,15 @@ extends SceneTree
 ## GRID RULES (the whole point of this kit):
 ##   * Cell = 2m (x) * 4m (y) * 2m (z). GridMap cell_size = (2,4,2), center_y = false.
 ##   * Every piece lives strictly inside its cell: x,z in [-1,1], y in [0,4].
-##   * Walls are solid blocks. Detail is cut INTO them (recesses), never stuck out,
-##     so neighbours never overlap and corners are always clean.
-##   * Wall "features" (lights, vents, consoles...) sit on the +Z face. Rotate the
-##     cell in the GridMap to point the feature at the room.
+##   * Walls are single-sided PROFILE pieces, not solid blocks. The visible face sits
+##     0.75m back from the room-side cell edge (z = +0.25 local) and the profile
+##     (gutter -> kick -> face -> chamfer) lands exactly on floor (y=0) and ceiling
+##     (y=4) height at the cell edge, so it meets any neighbouring floor cell.
+##     Nothing that can't be seen is drawn.
+##   * Profile pieces are generated for every combination of open sides + inner
+##     corners ("signature"); tools/build_level.gd picks the right one + rotation.
+##     Hand-paint names: wall, wall_corner_in, wall_corner_out, wall_<feature>.
+##   * Wall "features" (lights, vents, consoles...) are straight pieces facing +Z.
 ##   * Floor cells carry their own floor (y=0) and ceiling (y=4).
 
 const ATLAS_META := "res://art/textures/tiles.json"
@@ -48,13 +53,23 @@ func quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Ve
 class Side:
 	var n: Vector3
 	var r: Vector3
-	func _init(normal: Vector3, right: Vector3) -> void:
+	var base := 0.0     # depth of the plane this Side draws on, measured from the cell edge
+	func _init(normal: Vector3, right: Vector3, b := 0.0) -> void:
 		n = normal
 		r = right
+		base = b
 	func p(s: float, y: float, depth: float) -> Vector3:
-		return n * (1.0 - depth) + r * s + Vector3.UP * y
+		return n * (1.0 - base - depth) + r * s + Vector3.UP * y
+
+# wall profile (metres, depth measured from the room-side cell edge)
+const GD := 0.55    # gutter: edge -> GD at floor level
+const FD := 0.75    # face plane depth (face is at local +0.25)
+const KH := 0.25    # kick plate top / face bottom
+const CY := 3.25    # face top / chamfer start (chamfer lands on y=4 at the edge)
+const DIRS := [Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(-1, 0, 0)]  # side index 0..3
 
 var SIDE_F := Side.new(Vector3(0, 0, 1), Vector3(1, 0, 0))    # +Z (feature side)
+var FACE_F := Side.new(Vector3(0, 0, 1), Vector3(1, 0, 0), FD) # +Z face plane
 var SIDE_B := Side.new(Vector3(0, 0, -1), Vector3(-1, 0, 0))
 var SIDE_R := Side.new(Vector3(1, 0, 0), Vector3(0, 0, -1))
 var SIDE_L := Side.new(Vector3(-1, 0, 0), Vector3(0, 0, 1))
@@ -86,9 +101,9 @@ func plain_side(st: SurfaceTool, sd, lower: String, upper: String) -> void:
 func recess(st: SurfaceTool, sd, s0: float, s1: float, y0: float, y1: float, depth: float,
 		lower: String, upper: String, back: String, edge: String,
 		bu0 := 0.0, bu1 := 1.0, bv0 := 0.0, bv1 := 1.0) -> void:
-	# front face with a rectangular hole
-	side_auto(st, sd, -1, 1, 0, y0, 0, lower, upper)
-	side_auto(st, sd, -1, 1, y1, 4, 0, lower, upper)
+	# front face (KH..CY) with a rectangular hole
+	side_auto(st, sd, -1, 1, KH, y0, 0, lower, upper)
+	side_auto(st, sd, -1, 1, y1, CY, 0, lower, upper)
 	side_auto(st, sd, -1, s0, y0, y1, 0, lower, upper)
 	side_auto(st, sd, s1, 1, y0, y1, 0, lower, upper)
 	# back panel
@@ -208,12 +223,177 @@ func ceiling_with_panel(st: SurfaceTool, hx: float, hz: float, depth: float) -> 
 			"trim", Vector2(0, 0), Vector2(1, 0), Vector2(1, dv), Vector2(0, dv))
 
 # ----------------------------------------------------------------- pieces ----
-func wall_base(st: SurfaceTool, lower := "wall_lower", upper := "wall_upper", skip_front := false) -> void:
-	if not skip_front:
-		plain_side(st, SIDE_F, lower, upper)
-	plain_side(st, SIDE_B, lower, upper)
-	plain_side(st, SIDE_R, lower, upper)
-	plain_side(st, SIDE_L, lower, upper)
+func poly(st: SurfaceTool, pts: Array, n: Vector3, tile: String, uvs: Array) -> void:
+	# convex polygon as a fan; degenerate triangles skipped, each wound to face n
+	for k in range(1, pts.size() - 1):
+		var a: Vector3 = pts[0]
+		var b: Vector3 = pts[k]
+		var c: Vector3 = pts[k + 1]
+		var cr := (b - a).cross(c - a)
+		if cr.length() < 1e-6:
+			continue
+		var idx := [0, k + 1, k] if cr.dot(n) > 0.0 else [0, k, k + 1]
+		for j in idx:
+			st.set_normal(n)
+			var uv: Vector2 = uvs[j]
+			st.set_uv(tile_uv(tile, uv.x, uv.y))
+			st.add_vertex(pts[j])
+
+func side_of(i: int, base := 0.0):
+	var n: Vector3 = DIRS[i]
+	return Side.new(n, Vector3.UP.cross(n), base)
+
+## s-extent of a profile strip at depth d. Modes: "full", "convex" (mitre round an
+## outside corner), "concave" (the strip is just the corner wedge of an inside corner).
+func s_lo(mode: String, d: float) -> float:
+	match mode:
+		"convex": return -(1.0 - d)
+		"concave": return 1.0 - d
+	return -1.0
+
+func s_hi(mode: String, d: float) -> float:
+	match mode:
+		"convex": return 1.0 - d
+		"concave": return -(1.0 - d)
+	return 1.0
+
+## One wall profile along side sd: gutter, kick, (face), chamfer.
+## face_fn draws the face itself (so features can replace it); null = plain face.
+func profile(st: SurfaceTool, sd, lo_m: String, hi_m: String, face_fn = null) -> void:
+	var segs := [
+		[0.0, 0.0, GD, 0.0, "gutter", Vector3.UP, 0.0, GD / 2.0],
+		[GD, 0.0, FD, KH, "kick", (sd.n * KH + Vector3.UP * (FD - GD)).normalized(), 0.2, 0.55],
+		[FD, CY, 0.0, 4.0, "chamfer", (sd.n + Vector3.DOWN).normalized(), 0.47, 1.0],
+	]
+	for g in segs:
+		var d0: float = g[0]; var y0: float = g[1]; var d1: float = g[2]; var y1: float = g[3]
+		var v0: float = g[6]; var v1: float = g[7]
+		var a := [s_lo(lo_m, d0), s_hi(hi_m, d0)]
+		var b := [s_lo(lo_m, d1), s_hi(hi_m, d1)]
+		var pts := [sd.p(a[0], y0, d0), sd.p(a[1], y0, d0), sd.p(b[1], y1, d1), sd.p(b[0], y1, d1)]
+		var uvs := [Vector2((a[0] + 1) / 2, v0), Vector2((a[1] + 1) / 2, v0), Vector2((b[1] + 1) / 2, v1), Vector2((b[0] + 1) / 2, v1)]
+		poly(st, pts, g[5], g[4], uvs)
+	if face_fn != null:
+		face_fn.call(st)
+	else:
+		var f = Side.new(sd.n, sd.r, FD)
+		side_auto(st, f, s_lo(lo_m, FD), s_hi(hi_m, FD), KH, CY, 0, "wall_lower", "wall_upper")
+
+func rot_mask(m: int, k: int) -> int:
+	var out := 0
+	for i in 4:
+		if m & (1 << i):
+			out |= 1 << ((i + k) % 4)
+	return out
+
+## Mesh for a signature: `sides` = open neighbours (bit i = DIRS[i]),
+## `diag` = inside corners (bit i = corner between DIRS[i] and DIRS[i+1]).
+func wall_mesh(st: SurfaceTool, sides: int, diag: int, face_fn = null) -> void:
+	for i in 4:
+		if sides & (1 << i):
+			var lo := "convex" if sides & (1 << ((i + 3) % 4)) else "full"
+			var hi := "convex" if sides & (1 << ((i + 1) % 4)) else "full"
+			profile(st, side_of(i), lo, hi, face_fn if i == 0 else null)
+	for j in 4:
+		if diag & (1 << j):
+			profile(st, side_of(j), "concave", "full")            # wedge at +s end of side j
+			profile(st, side_of((j + 1) % 4), "full", "concave")  # wedge at -s end of side j+1
+
+func wall_collision(sides: int, diag: int) -> Array:
+	# 3x3 sub-cells split at the face planes (+-0.25). Room sub-cells get floor,
+	# solid sub-cells get a full-height box. Rows are merged along X.
+	var edges := [-1.0, -0.25, 0.25, 1.0]
+	var room := []
+	for zi in 3:
+		var row := []
+		for xi in 3:
+			var r := false
+			if zi == 2 and sides & 1: r = true          # +Z
+			if xi == 2 and sides & 2: r = true          # +X
+			if zi == 0 and sides & 4: r = true          # -Z
+			if xi == 0 and sides & 8: r = true          # -X
+			if xi == 2 and zi == 2 and diag & 1: r = true
+			if xi == 2 and zi == 0 and diag & 2: r = true
+			if xi == 0 and zi == 0 and diag & 4: r = true
+			if xi == 0 and zi == 2 and diag & 8: r = true
+			row.append(r)
+		room.append(row)
+	var shapes := []
+	for zi in 3:
+		var xi := 0
+		while xi < 3:
+			var kind: bool = room[zi][xi]
+			var xe := xi
+			while xe + 1 < 3 and room[zi][xe + 1] == kind:
+				xe += 1
+			var mn := Vector3(edges[xi], 0, edges[zi])
+			var mx := Vector3(edges[xe + 1], 4, edges[zi + 1])
+			if kind:
+				shapes += shape_box(Vector3(mn.x, -0.5, mn.z), Vector3(mx.x, 0, mx.z))
+			else:
+				shapes += shape_box(mn, mx)
+			xi = xe + 1
+	return shapes
+
+func canonical(sides: int, diag: int) -> Array:
+	var best := [999, 0, 0]
+	for k in 4:
+		var s := rot_mask(sides, k)
+		var d := rot_mask(diag, k)
+		var key := s * 16 + d
+		if key < best[0]:
+			best = [key, s, d]
+	return [best[1], best[2]]
+
+func build_walls() -> void:
+	# --- auto pieces: every rotation-unique signature ---
+	var done := {}
+	var named := {"1_0": "wall", "3_0": "wall_corner_out", "0_1": "wall_corner_in"}
+	var sigs := []
+	for sides in 16:
+		for diag in 16:
+			var ok := sides != 0 or diag != 0
+			for j in 4:   # an inside corner only exists where both adjacent sides are closed
+				if diag & (1 << j) and (sides & (1 << j) or sides & (1 << ((j + 1) % 4))):
+					ok = false
+			if not ok:
+				continue
+			var c := canonical(sides, diag)
+			var key := "%d_%d" % [c[0], c[1]]
+			if done.has(key):
+				continue
+			done[key] = true
+			sigs.append(c)
+	sigs.sort_custom(func(a, b): return a[0] * 16 + a[1] < b[0] * 16 + b[1])
+	for c in sigs:
+		var key := "%d_%d" % [c[0], c[1]]
+		var st := new_st()
+		wall_mesh(st, c[0], c[1])
+		var nm: String = named.get(key, "wall_auto_%s" % key)
+		add_item(nm, finish(st), wall_collision(c[0], c[1]), "Wall profile, open sides mask %d, inside corners mask %d" % [c[0], c[1]])
+
+	# --- feature walls: straight piece (open +Z), custom face ---
+	var feats := [
+		["wall_bulkhead", "Ribbed bulkhead face", func(st): side_auto(st, FACE_F, -1, 1, KH, CY, 0, "wall_concrete", "wall_concrete")],
+		["wall_hazard", "Hazard stripes, lower face", func(st): side_auto(st, FACE_F, -1, 1, KH, CY, 0, "hazard", "wall_upper")],
+		["wall_cables", "Cable run, upper face", func(st): side_auto(st, FACE_F, -1, 1, KH, CY, 0, "wall_lower", "wall_cables")],
+		["wall_rust", "Rusted upper face", func(st): side_auto(st, FACE_F, -1, 1, KH, CY, 0, "wall_lower", "rust_plate")],
+		["wall_light", "Recessed cyan light strip (bakes an OmniLight)", func(st): recess(st, FACE_F, -0.875, 0.875, 2.625, 3.125, 0.125, "wall_lower", "wall_upper", "light_strip", "trim", 0.0, 1.0, 0.36, 0.64)],
+		["wall_vent", "Recessed floor-level vent", func(st): recess(st, FACE_F, -0.625, 0.625, 0.375, 1.5, 0.25, "wall_lower", "wall_upper", "vent", "trim")],
+		["wall_console", "Recessed console screen (bakes dim light)", func(st): recess(st, FACE_F, -0.75, 0.75, 1.0, 2.5, 0.25, "wall_lower", "wall_upper", "console", "trim")],
+		["wall_lamp", "Red warning lamp (bakes red OmniLight)", func(st): recess(st, FACE_F, -0.375, 0.375, 2.375, 3.125, 0.125, "wall_lower", "wall_upper", "warning_lamp", "trim")],
+		["wall_pipes", "Deep pipe bay", func(st): _pipes(st)],
+		["wall_window", "Deep-set window onto space (bakes faint light)", func(st): recess(st, FACE_F, -0.875, 0.875, 0.875, 3.0, 0.375, "wall_lower", "wall_upper", "window", "trim")],
+	]
+	for f in feats:
+		var st := new_st()
+		wall_mesh(st, 1, 0, f[2])
+		add_item(f[0], finish(st), wall_collision(1, 0), f[1])
+
+func _pipes(st: SurfaceTool) -> void:
+	recess(st, FACE_F, -0.75, 0.75, KH, 3.0, 0.5, "wall_lower", "wall_upper", "recess_back", "trim", 0.0, 0.75, 0.0, 1.0)
+	for px in [-0.45, 0.0, 0.45]:
+		cylinder_y(st, Vector3(px, 0, 0.0), 0.14, KH, 3.0, "pipe")
 
 func new_st() -> SurfaceTool:
 	var st := SurfaceTool.new()
@@ -242,55 +422,8 @@ func shape_box(mn: Vector3, mx: Vector3) -> Array:
 	b.size = mx - mn
 	return [b, Transform3D(Basis(), (mn + mx) * 0.5)]
 
-func wall_shapes() -> Array:
-	return shape_box(Vector3(-1, 0, -1), Vector3(1, 4, 1))
-
 func floor_shapes() -> Array:
 	return shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, 4, -1), Vector3(1, 4.5, 1))
-
-func build_walls() -> void:
-	var st: SurfaceTool
-	# plain steel
-	st = new_st(); wall_base(st)
-	add_item("wall", finish(st), wall_shapes(), "Plain steel wall block")
-	# concrete
-	st = new_st(); wall_base(st, "wall_concrete", "wall_concrete")
-	add_item("wall_bulkhead", finish(st), wall_shapes(), "Ribbed bulkhead wall block")
-	# hazard band lower
-	st = new_st(); wall_base(st, "hazard", "wall_upper", true); plain_side(st, SIDE_F, "hazard", "wall_upper")
-	add_item("wall_hazard", finish(st), wall_shapes(), "Hazard stripes on +Z lower half")
-	# cables upper
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true); plain_side(st, SIDE_F, "wall_lower", "wall_cables")
-	add_item("wall_cables", finish(st), wall_shapes(), "Cable run on +Z upper half")
-	# rust upper
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true); plain_side(st, SIDE_F, "wall_lower", "rust_plate")
-	add_item("wall_rust", finish(st), wall_shapes(), "Rusted upper panel on +Z")
-	# recessed light strip (spawns a light)
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.875, 0.875, 2.625, 3.125, 0.125, "wall_lower", "wall_upper", "light_strip", "trim", 0.0, 1.0, 0.36, 0.64)
-	add_item("wall_light", finish(st), wall_shapes(), "Recessed cyan light strip on +Z (spawns OmniLight)")
-	# vent
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.625, 0.625, 0.25, 1.5, 0.25, "wall_lower", "wall_upper", "vent", "trim", 0.0, 1.0, 0.0, 1.0)
-	add_item("wall_vent", finish(st), wall_shapes(), "Recessed floor-level vent on +Z")
-	# console
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.75, 0.75, 1.0, 2.5, 0.25, "wall_lower", "wall_upper", "console", "trim", 0.0, 1.0, 0.0, 1.0)
-	add_item("wall_console", finish(st), wall_shapes(), "Recessed console screen on +Z (spawns dim light)")
-	# red warning lamp
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.375, 0.375, 2.5, 3.25, 0.125, "wall_lower", "wall_upper", "warning_lamp", "trim", 0.0, 1.0, 0.0, 1.0)
-	add_item("wall_lamp", finish(st), wall_shapes(), "Red warning lamp on +Z (spawns red OmniLight)")
-	# pipe bay: deep recess with vertical pipes
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.75, 0.75, 0.0, 3.5, 0.5, "wall_lower", "wall_upper", "recess_back", "trim", 0.0, 0.75, 0.0, 1.0)
-	for px in [-0.45, 0.0, 0.45]:
-		cylinder_y(st, Vector3(px, 0, 0.75), 0.14, 0.0, 3.5, "pipe")
-	add_item("wall_pipes", finish(st), wall_shapes(), "Deep pipe bay on +Z")
-	# porthole window onto space
-	st = new_st(); wall_base(st, "wall_lower", "wall_upper", true)
-	recess(st, SIDE_F, -0.875, 0.875, 0.875, 3.0, 0.375, "wall_lower", "wall_upper", "window", "trim", 0.0, 1.0, 0.0, 1.0)
-	add_item("wall_window", finish(st), wall_shapes(), "Deep-set window onto space on +Z (spawns faint light)")
 
 func build_floors() -> void:
 	var st: SurfaceTool
@@ -319,17 +452,58 @@ func build_floors() -> void:
 	box(st, Vector3(-0.75, 0, -0.75), Vector3(0.75, 1.5, 0.75), "crate", "crate")
 	box(st, Vector3(-0.5, 1.5, -0.5), Vector3(0.5, 2.5, 0.5), "crate", "crate")
 	add_item("crate_stack", finish(st), floor_shapes() + shape_box(Vector3(-0.75, 0, -0.75), Vector3(0.75, 1.5, 0.75)) + shape_box(Vector3(-0.5, 1.5, -0.5), Vector3(0.5, 2.5, 0.5)), "Floor with stacked crates")
-	# door frame (passage runs along Z, door slab spawned at runtime)
-	st = new_st(); floor_face(st, "floor_metal"); ceiling_face(st)
-	box(st, Vector3(-1, 0, -0.25), Vector3(-0.75, 3.25, 0.25), "hazard", "trim", "", true)
-	box(st, Vector3(0.75, 0, -0.25), Vector3(1, 3.25, 0.25), "hazard", "trim", "", true)
-	box(st, Vector3(-1, 3.25, -0.25), Vector3(1, 4, 0.25), "trim", "trim", "trim", true)
-	add_item("door", finish(st), floor_shapes() + shape_box(Vector3(-1, 0, -0.25), Vector3(-0.75, 4, 0.25)) + shape_box(Vector3(0.75, 0, -0.25), Vector3(1, 4, 0.25)) + shape_box(Vector3(-1, 3.25, -0.25), Vector3(1, 4, 0.25)), "Door frame, passage along Z (spawns sliding door)")
-	# half of a double door: jamb on -X only; pair two cells (second rotated 180)
-	st = new_st(); floor_face(st, "floor_metal"); ceiling_face(st)
-	box(st, Vector3(-1, 0, -0.25), Vector3(-0.75, 3.25, 0.25), "hazard", "trim", "", true)
-	box(st, Vector3(-1, 3.25, -0.25), Vector3(1, 4, 0.25), "trim", "trim", "trim", true)
-	add_item("door_half", finish(st), floor_shapes() + shape_box(Vector3(-1, 0, -0.25), Vector3(-0.75, 4, 0.25)) + shape_box(Vector3(-1, 3.25, -0.25), Vector3(1, 4, 0.25)), "Half of a 2-cell double door, jamb on -X (spawns slab that slides into the jamb side)")
+	# doors: passage along Z, frame faces sit on the wall face planes (+-0.25) so the
+	# wall profile runs straight through above the opening. Slabs are baked by Level.
+	for spec in [["door", [-1.0, 1.0], "Door frame, passage along Z (bakes a sliding door)"],
+			["door_half", [-1.0], "Half of a 2-cell double door, jamb on -X (pair with a 180-rotated twin)"]]:
+		var dst := new_st()
+		door_mesh(dst, spec[1])
+		var shapes := shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, CY, -0.25), Vector3(1, 4, 0.25))
+		for jx in spec[1]:
+			var x0: float = minf(jx, jx * 0.75)
+			var x1: float = maxf(jx, jx * 0.75)
+			shapes += shape_box(Vector3(x0, 0, -0.25), Vector3(x1, CY, 0.25))
+		add_item(spec[0], finish(dst), shapes, spec[2])
+
+## jambs: list of jamb sides in local X (-1 and/or +1). Jamb occupies |x| in [0.75, 1].
+func door_mesh(st: SurfaceTool, jambs: Array) -> void:
+	# passage floor + soffit
+	quad(st, Vector3(-1, 0, 0.25), Vector3(1, 0, 0.25), Vector3(1, 0, -0.25), Vector3(-1, 0, -0.25), Vector3.UP,
+		"floor_metal", Vector2(0, 0.375), Vector2(1, 0.375), Vector2(1, 0.625), Vector2(0, 0.625))
+	var ox0 := -0.75 if jambs.has(-1.0) else -1.0
+	var ox1 := 0.75 if jambs.has(1.0) else 1.0
+	quad(st, Vector3(ox0, CY, -0.25), Vector3(ox1, CY, -0.25), Vector3(ox1, CY, 0.25), Vector3(ox0, CY, 0.25), Vector3.DOWN,
+		"trim", Vector2(0, 0), Vector2(0.75, 0), Vector2(0.75, 0.25), Vector2(0, 0.25))
+	for i in [0, 2]:   # +Z and -Z sides
+		var sd = side_of(i)
+		var f = Side.new(sd.n, sd.r, FD)
+		# gutter + chamfer full width
+		for g in [[0.0, 0.0, GD, 0.0, "gutter", Vector3.UP, 0.0, GD / 2.0], [FD, CY, 0.0, 4.0, "chamfer", (sd.n + Vector3.DOWN).normalized(), 0.47, 1.0]]:
+			var pts := [sd.p(-1, g[1], g[0]), sd.p(1, g[1], g[0]), sd.p(1, g[3], g[2]), sd.p(-1, g[3], g[2])]
+			poly(st, pts, g[5], g[4], [Vector2(0, g[6]), Vector2(1, g[6]), Vector2(1, g[7]), Vector2(0, g[7])])
+		# floor between gutter and frame face (doorway threshold)
+		poly(st, [sd.p(ox0 * sd.r.x if sd.r.x != 0 else ox0, 0, GD), sd.p(ox1 * sd.r.x if sd.r.x != 0 else ox1, 0, GD), sd.p(ox1 * sd.r.x if sd.r.x != 0 else ox1, 0, FD), sd.p(ox0 * sd.r.x if sd.r.x != 0 else ox0, 0, FD)],
+			Vector3.UP, "floor_metal", [Vector2(0, 0), Vector2(0.75, 0), Vector2(0.75, 0.1), Vector2(0, 0.1)])
+		for jx in jambs:
+			# jamb in s-space of this side
+			var js: float = jx * sd.r.x
+			var s0 := minf(js, js * 0.75)
+			var s1 := maxf(js, js * 0.75)
+			var kp := [sd.p(s0, 0, GD), sd.p(s1, 0, GD), sd.p(s1, KH, FD), sd.p(s0, KH, FD)]
+			poly(st, kp, (sd.n * KH + Vector3.UP * (FD - GD)).normalized(), "kick",
+				[Vector2((s0 + 1) / 2, 0.2), Vector2((s1 + 1) / 2, 0.2), Vector2((s1 + 1) / 2, 0.55), Vector2((s0 + 1) / 2, 0.55)])
+			side_auto(st, f, s0, s1, KH, CY, 0, "hazard", "hazard")
+			# kick end cap, facing the opening
+			var inner := js * 0.75
+			var cap_n: Vector3 = sd.r * (-signf(js))
+			poly(st, [sd.p(inner, 0, GD), sd.p(inner, 0, FD), sd.p(inner, KH, FD)], cap_n, "trim",
+				[Vector2(0, 0), Vector2(0.1, 0), Vector2(0.1, 0.12)])
+	# jamb inner faces (between the two face planes)
+	for jx in jambs:
+		var x: float = jx * 0.75
+		var n := Vector3(-signf(jx), 0, 0)
+		quad(st, Vector3(x, 0, -0.25), Vector3(x, 0, 0.25), Vector3(x, CY, 0.25), Vector3(x, CY, -0.25), n,
+			"hazard", Vector2(0, 0), Vector2(0.25, 0), Vector2(0.25, 1), Vector2(0, 1))
 
 func _init() -> void:
 	var f := FileAccess.open(ATLAS_META, FileAccess.READ)

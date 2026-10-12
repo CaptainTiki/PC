@@ -4,14 +4,19 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 
 ## Grid kit rules
 - Cell = 2m x 4m x 2m. GridMap `cell_size = (2,4,2)`, `cell_center_y = false`.
-- Every piece lives strictly inside its cell. Walls are solid blocks; detail is cut
-  *into* them (recesses), never stuck out, so neighbours never overlap.
-- Wall features (light, vent, console, lamp, pipes, hazard, cables, rust) sit on the
-  +Z face. Rotate the cell to aim them at the room.
-- Floor cells carry their own floor + ceiling.
-- Ship trims (angled wall/ceiling chamfers, kick plates, corner caps) are generated
-  automatically from the grid by `scripts/level.gd` — never painted.
-- Light/door cells become real lights/doors at runtime (`scripts/level.gd`).
+- Every piece lives strictly inside its cell.
+- Walls are single-sided profile pieces: gutter grating -> kick -> face -> chamfer.
+  The face sits 0.75m back from the room-side edge; the profile lands on floor and
+  ceiling height at the edge, so it meets any floor cell. Hidden faces are never drawn.
+- Wall pieces exist for every combination of open sides + inside corners
+  (`wall`, `wall_corner_in`, `wall_corner_out`, `wall_auto_<sides>_<corners>`).
+  The ASCII builder picks the right one and rotation automatically.
+- Feature walls (light, vent, console, lamp, pipes, window, hazard, cables, rust,
+  bulkhead) are straight pieces facing +Z.
+- Rooms are separated by at least one wall cell; wall cells with no open neighbour
+  are left empty.
+- Floor cells carry their own floor + ceiling. Doors sit in the wall line.
+- Light/door cells get real lights/doors via the Level "Bake" button.
 
 ## Pipeline
     tools/rebuild_and_shoot.sh [level]   # textures -> kit -> level -> screenshots
@@ -33,7 +38,7 @@ Layout rule of thumb: corridors at least 2 cells (4m) wide; glowing grate is an 
 - `Enemy` + `EnemyData` (data/drifter.tres) — flat billboard sprite (art/sprites), floats,
   keeps range, fires slow `Projectile` orbs; `take_hit()` chokepoint; shard burst on death.
 - Level map chars: `@` player start, `e` Drifter spawn.
-- Level trims/lights/doors are baked into the scene (Level inspector button "Bake"),
+- Lights/doors are baked into the scene (Level inspector button "Bake"),
   nothing is generated at runtime.
 
 ## Dev tooling

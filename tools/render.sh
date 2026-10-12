@@ -1,4 +1,4 @@
 #!/bin/bash
 # Run Godot with a real (software) GL context under a virtual X display.
 export LIBGL_ALWAYS_SOFTWARE=1
-exec xvfb-run -a -s "-screen 0 1920x1080x24" /home/claude/tools/godot --audio-driver Dummy --rendering-driver opengl3 --quit-after 3000 --path /home/claude/collider "$@"
+exec xvfb-run -a -s "-screen 0 1920x1080x24" ${GODOT:-/home/claude/tools/godot} --audio-driver Dummy --rendering-driver opengl3 --quit-after 3000 --path $(cd "$(dirname "$0")/.." && pwd) "$@"

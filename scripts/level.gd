@@ -1,11 +1,9 @@
 @tool
 class_name Level
 extends Node3D
-## Level root. Paint the GridMap, then press "Bake" (inspector) — this writes the
-## derived ship detail into the scene as normal saved nodes under "Baked":
-##   * auto-trims: angled wall/ceiling chamfers + floor kick plates along every
-##     wall edge, mitred inner corners, capped outer corners
-##   * OmniLights for light cells, Door scenes for door cells
+## Level root. Paint the GridMap, then press "Bake" (inspector) — this writes
+## OmniLights for light cells and Door scenes for door cells into the scene as
+## normal saved nodes under "Baked". Wall trims live in the wall pieces themselves.
 ## Nothing is generated at runtime. Re-bake after editing the grid.
 ##
 ## Capture mode (automated screenshots):
@@ -14,21 +12,15 @@ extends Node3D
 const LIGHTS := {
 	# item name: [local offset (before cell rotation), color, energy, range, shadow]
 	"floor_light": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 2.6, 9.0, true],
-	"wall_light": [Vector3(0, 2.9, 1.6), Color(0.35, 0.88, 1.0), 0.9, 5.5, false],
-	"wall_lamp": [Vector3(0, 2.8, 1.4), Color(1.0, 0.22, 0.15), 1.6, 5.5, false],
-	"wall_console": [Vector3(0, 1.8, 1.4), Color(0.3, 0.85, 1.0), 0.6, 3.5, false],
-	"wall_window": [Vector3(0, 2.1, 1.3), Color(0.45, 0.6, 1.0), 0.7, 4.5, false],
+	"wall_light": [Vector3(0, 2.9, 0.85), Color(0.35, 0.88, 1.0), 0.9, 5.5, false],
+	"wall_lamp": [Vector3(0, 2.75, 0.65), Color(1.0, 0.22, 0.15), 1.6, 5.5, false],
+	"wall_console": [Vector3(0, 1.8, 0.65), Color(0.3, 0.85, 1.0), 0.6, 3.5, false],
+	"wall_window": [Vector3(0, 2.0, 0.55), Color(0.45, 0.6, 1.0), 0.7, 4.5, false],
 	"floor_grate": [Vector3(0, 0.35, 0), Color(0.25, 0.8, 1.0), 0.3, 2.5, false],
 }
 const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 
-# trim profile (metres)
-const CH_Y := 3.25     # chamfer starts on the wall at this height
-const CH_D := 0.75     # ...and reaches this far out along the ceiling
-const KICK_H := 0.25
-const KICK_D := 0.2
-
-@export_tool_button("Bake trims, lights & doors", "Bake") var bake_action := bake
+@export_tool_button("Bake lights & doors", "Bake") var bake_action := bake
 
 @onready var grid: GridMap = $Grid
 var meta: Dictionary
@@ -57,12 +49,6 @@ func bake() -> void:
 	var root := self if owner == null else owner
 	baked.owner = root
 	meta = JSON.parse_string(FileAccess.get_file_as_string("res://art/textures/tiles.json"))
-	var trims := _build_trims()
-	if trims:
-		var mi := MeshInstance3D.new()
-		mi.name = "Trims"
-		mi.mesh = trims
-		_own(baked, mi, root)
 	_bake_cells(baked, root)
 
 func _own(parent: Node, n: Node, root: Node) -> void:
@@ -110,97 +96,6 @@ func _bake_cells(parent: Node, root: Node) -> void:
 				door.slab_mesh = load("res://kit/door_slab.res")
 			door.transform = Transform3D(basis, origin)
 			_own(parent, door, root)
-
-# ----------------------------------------------------------------- trims ----
-func _uv(tile: String, u: float, v: float) -> Vector2:
-	var i: int = meta.tiles[tile]
-	var cols: int = meta.cols
-	var cell: float = meta.cell
-	var pad: float = meta.pad
-	var t: float = meta.tile
-	var cx := float(i % cols) * cell + pad
-	var cy := float(i / cols) * cell + pad
-	return Vector2((cx + clampf(u, 0, 1) * t) / float(meta.width), (cy + (1.0 - clampf(v, 0, 1)) * t) / float(meta.height))
-
-func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, tile: String,
-		ua: Vector2, ub: Vector2, uc: Vector2) -> void:
-	var fn := (b - a).cross(c - a).normalized()
-	var pts := [a, b, c]
-	var uvs := [ua, ub, uc]
-	var order := [0, 2, 1] if fn.dot(n) > 0.0 else [0, 1, 2]   # Godot front = clockwise
-	for k in order:
-		st.set_normal(fn if fn.dot(n) > 0.0 else -fn)
-		st.set_uv(_uv(tile, uvs[k].x, uvs[k].y))
-		st.add_vertex(pts[k])
-
-func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, tile: String,
-		ua: Vector2, ub: Vector2, uc: Vector2, ud: Vector2) -> void:
-	_tri(st, a, b, c, n, tile, ua, ub, uc)
-	_tri(st, a, c, d, n, tile, ua, uc, ud)
-
-func _build_trims() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var dirs := [Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1), Vector3i(0, 0, -1)]
-	var count := 0
-	for cell in grid.get_used_cells():
-		if not _is_open(cell):
-			continue
-		var o := grid.map_to_local(cell)
-		for di in dirs:
-			if not _is_wall(cell + di):
-				continue
-			var d := Vector3(di)
-			var t := Vector3(-d.z, 0, d.x)
-			var n := -d
-			# chamfer: wall @CH_Y -> ceiling @ (1-CH_D)
-			var w0 := o + d - t + Vector3(0, CH_Y, 0)
-			var w1 := o + d + t + Vector3(0, CH_Y, 0)
-			var c1 := o + d * (1.0 - CH_D) + t + Vector3(0, 4, 0)
-			var c0 := o + d * (1.0 - CH_D) - t + Vector3(0, 4, 0)
-			_quad(st, w0, w1, c1, c0, (n + Vector3.DOWN).normalized(), "chamfer",
-				Vector2(0, 0.47), Vector2(1, 0.47), Vector2(1, 1), Vector2(0, 1))
-			# kick plate: floor @(1-KICK_D) -> wall @KICK_H
-			var f0 := o + d * (1.0 - KICK_D) - t
-			var f1 := o + d * (1.0 - KICK_D) + t
-			var k1 := o + d + t + Vector3(0, KICK_H, 0)
-			var k0 := o + d - t + Vector3(0, KICK_H, 0)
-			_quad(st, f0, f1, k1, k0, (n + Vector3.UP).normalized(), "kick",
-				Vector2(0, 0.2), Vector2(1, 0.2), Vector2(1, 0.55), Vector2(0, 0.55))
-			count += 1
-			# end caps where the run stops at a doorway
-			for sgn in [-1.0, 1.0]:
-				var side := cell + Vector3i(t * sgn)
-				if _name_at(side).begins_with("door"):
-					var e: Vector3 = o + t * sgn
-					_tri(st, e + d + Vector3(0, CH_Y, 0), e + d + Vector3(0, 4, 0), e + d * (1.0 - CH_D) + Vector3(0, 4, 0),
-						t * sgn, "trim", Vector2(0, 0), Vector2(0, 0.4), Vector2(0.4, 0.4))
-					_tri(st, e + d * (1.0 - KICK_D), e + d, e + d + Vector3(0, KICK_H, 0),
-						t * sgn, "trim", Vector2(0, 0), Vector2(0.15, 0), Vector2(0.15, 0.15))
-		# outer corners: diagonal is wall, both orthogonal neighbours open
-		for dx in [-1, 1]:
-			for dz in [-1, 1]:
-				if _is_wall(cell + Vector3i(dx, 0, dz)) and _is_open(cell + Vector3i(dx, 0, 0)) and _is_open(cell + Vector3i(0, 0, dz)) \
-						and not _is_wall(cell + Vector3i(dx, 0, 0)) and not _is_wall(cell + Vector3i(0, 0, dz)):
-					var p := o + Vector3(dx, CH_Y, dz)
-					var a := o + Vector3(dx, 4, dz * (1.0 - CH_D))
-					var b := o + Vector3(dx * (1.0 - CH_D), 4, dz)
-					var m := o + Vector3(dx * (1.0 - CH_D), 4, dz * (1.0 - CH_D))
-					var nn := Vector3(-dx, -1.4, -dz).normalized()
-					_tri(st, p, a, m, nn, "chamfer", Vector2(0.5, 0.47), Vector2(0.5, 1), Vector2(0.9, 1))
-					_tri(st, p, m, b, nn, "chamfer", Vector2(0.5, 0.47), Vector2(0.9, 1), Vector2(0.9, 0.47))
-					var kp := o + Vector3(dx, KICK_H, dz)
-					var ka := o + Vector3(dx, 0, dz * (1.0 - KICK_D))
-					var kb := o + Vector3(dx * (1.0 - KICK_D), 0, dz)
-					var km := o + Vector3(dx * (1.0 - KICK_D), 0, dz * (1.0 - KICK_D))
-					var kn := Vector3(-dx, 1.4, -dz).normalized()
-					_tri(st, kp, ka, km, kn, "kick", Vector2(0.3, 0.55), Vector2(0.3, 0.2), Vector2(0.5, 0.2))
-					_tri(st, kp, km, kb, kn, "kick", Vector2(0.3, 0.55), Vector2(0.5, 0.2), Vector2(0.5, 0.55))
-	if count == 0:
-		return null
-	var mesh := st.commit()
-	mesh.surface_set_material(0, load("res://kit/kit_material.tres"))
-	return mesh
 
 # --------------------------------------------------------------- capture ----
 func _capture() -> void:

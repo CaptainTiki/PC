@@ -1,7 +1,7 @@
 #!/bin/bash
 # Full pipeline: textures -> import -> kit -> level -> screenshots -> contact sheet
 set -e
-cd /home/claude/collider
+cd $(cd "$(dirname "$0")/.." && pwd)
 LEVEL=${1:-test_room}
 rm -f shots/${LEVEL}_*.png
 python3 tools/gen_textures.py
