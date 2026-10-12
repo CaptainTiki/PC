@@ -10,3 +10,7 @@ export_presets.cfg
 .godot/editor/
 
 .godot/
+
+# dev screenshots
+shots/*.png
+shots/*.txt
