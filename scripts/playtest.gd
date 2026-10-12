@@ -5,7 +5,7 @@ extends Node
 ## live enemy, aims, fires when lined up. Captures screenshots at key moments
 ## to res://shots/play_*.png and prints a combat log, then quits.
 
-const MAX_TIME := 60.0
+const MAX_TIME := 240.0
 const MAX_SHOTS := 14
 
 var player: Player
@@ -72,36 +72,60 @@ func _physics_process(delta: float) -> void:
 				_queue(0.35, "kill%d_b" % kills)
 		else:
 			live.append(e)
-	if live.is_empty() or player.dead or t > MAX_TIME:
+	var exit_done := false
+	var ex := get_tree().current_scene.find_child("Exit", true, false) as ExitTrigger
+	if ex:
+		exit_done = ex.done
+	if (live.is_empty() and ex == null) or exit_done or player.dead or t > MAX_TIME:
 		if capture_queue.is_empty():
 			_finish(live.size())
 		player.intent.fire = false
 		player.intent.move = Vector2.ZERO
 		return
-	# nearest live enemy
+	# target: nearest live enemy we can actually see (within 22m)
 	var head := player.head.global_position
-	live.sort_custom(func(a: Enemy, b: Enemy): return a.global_position.distance_to(head) < b.global_position.distance_to(head))
-	var e := live[0]
-	var aim := e.global_position + Vector3(0, 0.35, 0)
+	var level := get_tree().current_scene as Level
+	var space := player.get_world_3d().direct_space_state
+	var best: Enemy = null
+	var best_d := 22.0
+	for e in live:
+		var dd := e.global_position.distance_to(head)
+		if dd < best_d:
+			var q := PhysicsRayQueryParameters3D.create(head, e.global_position + Vector3(0, 0.35, 0), 1)
+			if space.intersect_ray(q).is_empty():
+				best = e
+				best_d = dd
+	var exit := get_tree().current_scene.find_child("Exit", true, false) as Node3D
+	var goal: Node3D = exit if exit else (live[0] if not live.is_empty() else null)
+	var move_dir := Vector3.ZERO
+	if best == null:
+		# nothing in view: walk the level toward the exit (or the nearest enemy)
+		if goal and level:
+			move_dir = level.flow_dir(player.global_position, goal.global_position)
+			if move_dir == Vector3.ZERO:
+				move_dir = (goal.global_position - player.global_position) * Vector3(1, 0, 1)
+		if move_dir.length() > 0.01:
+			var yaw_w := atan2(-move_dir.x, -move_dir.z)
+			player.rotation.y = lerp_angle(player.rotation.y, yaw_w, 0.15)
+			player.head.rotation.x = lerpf(player.head.rotation.x, 0.0, 0.2)
+		player.intent.move = Vector2(0, -1)
+		player.intent.fire = false
+		return
+	var aim := best.global_position + Vector3(0, 0.35, 0)
 	var d := aim - head
 	var yaw := atan2(-d.x, -d.z)
 	var pitch := atan2(d.y, Vector2(d.x, d.z).length())
-	if t < 2.4:   # walk in through the door first, eyes front
-		yaw = 0.0
-		pitch = 0.0
-	player.rotation.y = lerp_angle(player.rotation.y, yaw, 0.25)
-	player.head.rotation.x = lerpf(player.head.rotation.x, pitch, 0.25)
+	player.rotation.y = lerp_angle(player.rotation.y, yaw, 0.3)
+	player.head.rotation.x = lerpf(player.head.rotation.x, pitch, 0.3)
 	var err := absf(angle_difference(player.rotation.y, yaw)) + absf(player.head.rotation.x - pitch)
-	var q := PhysicsRayQueryParameters3D.create(head, aim, 1)
-	var visible := player.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
-	var dist := Vector2(d.x, d.z).length()
-	if t < 2.2 or not visible or dist > 9.0:
+	var close_melee := best.data.attack == "melee" and best_d < 4.5
+	if close_melee:
+		player.intent.move = Vector2(0.4 * sin(t * 2.0), 1.0)   # back-pedal while firing
+	elif best_d > 12.0:
 		player.intent.move = Vector2(0, -1)
-	elif dist < 5.0:
-		player.intent.move = Vector2(0.6 * sin(t * 1.3), 0.6)
 	else:
-		player.intent.move = Vector2(sin(t * 1.3), 0)   # strafe while fighting
-	player.intent.fire = visible and err < 0.06 and t > 2.4
+		player.intent.move = Vector2(sin(t * 1.3), 0)          # strafe
+	player.intent.fire = err < 0.08
 
 func _process(_d: float) -> void:
 	if player and player.health < _prev_hp:

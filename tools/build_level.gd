@@ -16,7 +16,14 @@ extends SceneTree
 ##   props   o  pillar   -  ceiling beam   +  beam crossing   t  cable tray (auto-joins)
 ##           p  vertical pipes (against the nearest wall)
 ##   clutter x  crate    X  crate stack   (free-placed scenes, not grid)
-##   other   D  door (DD = double door)   @  player start   e  Drifter
+##   actors  @  player start   e  Drifter   s  Skitter
+##   items   h  health   a  energy cells   E  section exit
+##   other   D  door (DD = double door)
+##
+## Sections after the map:
+##   [damage]  zone <c0> <r0> <c1> <r1>   damaged area: lights ~45%, some flicker or
+##             are dead, ceiling trim goes patchy
+##   [shots]   shot <name> <col> <row> <yaw> <pitch>   screenshot markers
 
 const WALLS := {
 	"#": "", "!": "", "?": "", "%": "",
@@ -27,12 +34,24 @@ const FLOORS := {
 	".": "floor", ",": "floor_metal", "=": "floor_grate", "_": "floor_line", "*": "floor_light",
 	"o": "floor", "-": "floor", "+": "floor", "t": "floor", "p": "floor",
 	"x": "floor", "X": "floor", "@": "floor", "e": "floor", "D": "door",
+	"s": "floor", "h": "floor", "a": "floor", "E": "floor",
 }
 # DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
 const MDIRS := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
 const TRAYS := {1: "tray_end", 3: "tray_corner", 5: "tray", 7: "tray_t", 15: "tray_cross"}
 
 var rows: PackedStringArray
+var zones: Array[Rect2i] = []
+
+func in_zone(c: int, r: int) -> bool:
+	for z in zones:
+		if z.has_point(Vector2i(c, r)):
+			return true
+	return false
+
+## deterministic per-cell coin flip (0..1)
+func roll(c: int, r: int, salt := 0) -> float:
+	return float(((c * 73856093) ^ (r * 19349663) ^ (salt * 83492791)) & 0xffff) / 65535.0
 
 func ch(c: int, r: int) -> String:
 	if r < 0 or r >= rows.size() or c < 0 or c >= rows[r].length():
@@ -107,12 +126,28 @@ func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	var src: String = args[0] if args.size() > 0 else "levels/test_room.txt"
 	var text := FileAccess.open("res://" + src, FileAccess.READ).get_as_text()
-	var parts := text.split("[shots]")
-	rows = parts[0].strip_edges(false, true).split("\n")
+	var sections := {"map": [], "shots": [], "damage": []}
+	var cur := "map"
+	for line in text.split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("[") and t.ends_with("]") and sections.has(t.substr(1, t.length() - 2)):
+			cur = t.substr(1, t.length() - 2)
+			continue
+		sections[cur].append(line)
+	rows = PackedStringArray(sections.map)
+	while rows.size() > 0 and rows[rows.size() - 1].strip_edges() == "":
+		rows.remove_at(rows.size() - 1)
+	for line in sections.damage:
+		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
+		if t.size() >= 5 and t[0] == "zone":
+			var a := Vector2i(int(t[1]), int(t[2]))
+			var b := Vector2i(int(t[3]), int(t[4]))
+			zones.append(Rect2i(a, b - a + Vector2i.ONE))
 
 	var root := Node3D.new()
 	root.name = src.get_file().get_basename().to_pascal_case()
 	root.set_script(load("res://scripts/level.gd"))
+	root.damaged_zones = zones
 	var grid := new_grid("Grid", "res://kit/structure.meshlib.res", Vector3(2, 4, 2), root)
 	var trim := new_grid("Trim", "res://kit/trim.meshlib.res", Vector3(2, 2, 2), root)
 	var props := new_grid("Props", "res://kit/props.meshlib.res", Vector3(2, 4, 2), root)
@@ -125,6 +160,8 @@ func _init() -> void:
 	root.add_child(clutter)
 	clutter.owner = root
 	var crate_scenes := {"x": load("res://scenes/props/crate.tscn"), "X": load("res://scenes/props/crate_stack.tscn")}
+	var item_scenes := {"h": load("res://scenes/props/pickup_health.tscn"), "a": load("res://scenes/props/pickup_cells.tscn"), "E": load("res://scenes/props/exit.tscn")}
+	var skitter_cells: Array[Vector3i] = []
 
 	var player_pos := Vector3.ZERO
 	var enemy_cells: Array[Vector3i] = []
@@ -152,15 +189,22 @@ func _init() -> void:
 				var gutter := "gutter_glow" if s == "%" else "gutter"
 				var chamfer := sig_name("chamfer", cn[1], cn[2])
 				var cori := wori
+				var dmg := in_zone(c, r)
 				if (s == "!" or s == "?") and straight:
-					chamfer = "chamfer_light" if s == "!" else "chamfer_light_broken"
+					var broken := s == "?" or (dmg and roll(c, r, 1) < 0.5)
+					chamfer = "chamfer_light_broken" if broken else "chamfer_light"
 					cori = orient_k([1, 2, 4, 8].find(sig[0]), trim)
+				elif dmg and roll(c, r, 2) < 0.35:
+					chamfer = ""                                 # patchy: missing ceiling trim
 				trim.set_cell_item(Vector3i(c, 0, r), tid[sig_name(gutter, cn[1], cn[2])], wori)
-				trim.set_cell_item(Vector3i(c, 1, r), tid[chamfer], cori)
+				if chamfer != "":
+					trim.set_cell_item(Vector3i(c, 1, r), tid[chamfer], cori)
 				continue
 			if not FLOORS.has(s):
 				continue
 			var item: String = FLOORS[s]
+			if s == "*" and in_zone(c, r) and roll(c, r, 3) < 0.5:
+				item = "floor"                                   # dead ceiling light
 			var ori := 0
 			if s == "_":
 				for i in 4:   # line is on the local -Z edge -> point -Z at the wall
@@ -217,6 +261,13 @@ func _init() -> void:
 					player_pos = grid.map_to_local(cell)
 				"e":
 					enemy_cells.append(cell)
+				"s":
+					skitter_cells.append(cell)
+				"h", "a", "E":
+					var it: Node3D = item_scenes[s].instantiate()
+					it.position = grid.map_to_local(cell)
+					clutter.add_child(it, true)
+					it.owner = root
 
 	# environment
 	var we := WorldEnvironment.new()
@@ -256,17 +307,23 @@ func _init() -> void:
 		e.position = grid.map_to_local(ec) + Vector3(0, 1.3, 0)
 		enemies.add_child(e, true)
 		e.owner = root
+	var skitter: PackedScene = load("res://scenes/actors/skitter.tscn")
+	for sc in skitter_cells:
+		var e: Node3D = skitter.instantiate()
+		e.position = grid.map_to_local(sc) + Vector3(0, 0.05, 0)
+		enemies.add_child(e, true)
+		e.owner = root
 
 	root.bake()
 
 	# screenshot markers
-	if parts.size() > 1:
+	if sections.shots.size() > 0:
 		var shots := Node3D.new()
 		shots.name = "Shots"
 		root.add_child(shots)
 		shots.owner = root
-		for line in parts[1].split("\n"):
-			var t := line.strip_edges().split(" ", false)
+		for line in sections.shots:
+			var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
 			if t.size() >= 6 and t[0] == "shot":
 				var m := Marker3D.new()
 				m.name = t[1]

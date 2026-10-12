@@ -28,6 +28,10 @@ const FLICKER := ["chamfer_light_broken"]
 const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 
 @export_tool_button("Bake lights & doors", "Bake") var bake_action := bake
+## Damaged areas in grid cells (x = column, y = row). Baked lights here run at
+## `damage_light_scale` and some of them flicker.
+@export var damaged_zones: Array[Rect2i] = []
+@export var damage_light_scale := 0.45
 
 @onready var grid: GridMap = $Grid
 var meta: Dictionary
@@ -92,9 +96,15 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			l.omni_range = d[3]
 			l.omni_attenuation = 1.4
 			l.shadow_enabled = d[4]
-			if nm in FLICKER:
+			var hurt := false
+			for z in damaged_zones:
+				if z.has_point(Vector2i(cell.x, cell.z)):
+					hurt = true
+			if hurt:
+				l.light_energy *= damage_light_scale
+			if nm in FLICKER or (hurt and ((cell.x * 7 + cell.z * 13) % 3 == 0)):
 				l.set_script(FlickerLight)
-				l.base_energy = d[2]
+				l.base_energy = l.light_energy
 			_own(parent, l, root)
 		elif nm == "door" or nm == "door_half":
 			var door: Door = DOOR_SCENE.instantiate()
@@ -108,6 +118,67 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 				door.slab_mesh = load("res://kit/door_slab.res")
 			door.transform = Transform3D(basis, origin)
 			_own(parent, door, root)
+
+# ------------------------------------------------------------ navigation ----
+## Grid flow field: BFS over walkable structure cells (floors + doors), cached per
+## goal cell. Enemies and the playtest bot use it to get round walls and through doors.
+var _walk := {}
+var _flows := {}
+const NDIRS := [Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1), Vector3i(0, 0, -1)]
+
+func is_walkable(c: Vector3i) -> bool:
+	if _walk.is_empty():
+		for cell in grid.get_used_cells():
+			var nm := grid.mesh_library.get_item_name(grid.get_cell_item(cell))
+			if nm.begins_with("floor") or nm.begins_with("door"):
+				_walk[Vector3i(cell.x, 0, cell.z)] = true
+	return _walk.has(Vector3i(c.x, 0, c.z))
+
+func _nearest_walkable(c: Vector3i) -> Vector3i:
+	if is_walkable(c):
+		return c
+	for d in NDIRS:
+		if is_walkable(c + d):
+			return c + d
+	return c
+
+func distance_field(goal: Vector3i) -> Dictionary:
+	goal = _nearest_walkable(Vector3i(goal.x, 0, goal.z))
+	if _flows.has(goal):
+		return _flows[goal]
+	var dist := {goal: 0}
+	var queue: Array[Vector3i] = [goal]
+	var i := 0
+	while i < queue.size():
+		var c: Vector3i = queue[i]
+		i += 1
+		for d in NDIRS:
+			var n: Vector3i = c + d
+			if not dist.has(n) and is_walkable(n):
+				dist[n] = dist[c] + 1
+				queue.append(n)
+	if _flows.size() > 8:
+		_flows.clear()
+	_flows[goal] = dist
+	return dist
+
+## Unit direction (XZ) from `from` toward the next cell on the way to `to`.
+func flow_dir(from: Vector3, to: Vector3) -> Vector3:
+	var field := distance_field(grid.local_to_map(grid.to_local(to)))
+	var c := grid.local_to_map(grid.to_local(from))
+	c = Vector3i(c.x, 0, c.z)
+	var best := c
+	var best_d: int = field.get(c, 1 << 30)
+	for d in NDIRS:
+		var n: Vector3i = c + d
+		if field.has(n) and field[n] < best_d:
+			best_d = field[n]
+			best = n
+	if best == c:
+		return Vector3.ZERO      # already in the goal cell (or cut off)
+	var p := grid.to_global(grid.map_to_local(best))
+	var v := Vector3(p.x - from.x, 0, p.z - from.z)
+	return v.normalized()
 
 # --------------------------------------------------------------- capture ----
 func _capture() -> void:

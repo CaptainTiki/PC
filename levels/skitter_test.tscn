@@ -1,0 +1,137 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/level.gd" id="1_4xxe3"]
+[ext_resource type="MeshLibrary" path="res://kit/structure.meshlib.res" id="2_fclgm"]
+[ext_resource type="MeshLibrary" path="res://kit/trim.meshlib.res" id="3_635et"]
+[ext_resource type="MeshLibrary" path="res://kit/props.meshlib.res" id="4_k601l"]
+[ext_resource type="PackedScene" path="res://scenes/props/pickup_health.tscn" id="5_kolf0"]
+[ext_resource type="Script" path="res://scripts/pickup.gd" id="6_fb42l"]
+[ext_resource type="PackedScene" path="res://scenes/props/pickup_cells.tscn" id="7_26lc0"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="8_41b4i"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="9_0f1l2"]
+[ext_resource type="PackedScene" path="res://scenes/actors/skitter.tscn" id="10_ennnc"]
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="11_2b35a"]
+[ext_resource type="Resource" path="res://data/skitter.tres" id="12_r0qk4"]
+
+[sub_resource type="Environment" id="Environment_eqgqa"]
+background_mode = 1
+background_color = Color(0.01, 0.01, 0.012, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.26, 0.27, 0.3, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+tonemap_exposure = 1.1
+glow_enabled = true
+glow_intensity = 0.7
+glow_bloom = 0.05
+glow_hdr_threshold = 0.9
+fog_enabled = true
+fog_light_color = Color(0.05, 0.07, 0.1, 1)
+fog_density = 0.015
+
+[node name="SkitterTest" type="Node3D"]
+script = ExtResource("1_4xxe3")
+
+[node name="Grid" type="GridMap" parent="."]
+mesh_library = ExtResource("2_fclgm")
+cell_size = Vector3(2, 4, 2)
+cell_octant_size = 4
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(0, 0, 0, 1, 0, 5, 2, 0, 5, 3, 0, 5, 4, 0, 5, 5, 0, 5, 6, 0, 5, 7, 0, 5, 8, 0, 5, 9, 0, 5, 10, 0, 5, 11, 0, 5, 12, 0, 5, 13, 0, 5, 14, 0, 1441792, 0, 1, 1048581, 1, 1, 24, 2, 1, 24, 3, 1, 24, 4, 1, 24, 5, 1, 24, 6, 1, 24, 7, 1, 24, 8, 1, 24, 9, 1, 24, 10, 1, 24, 11, 1, 24, 12, 1, 24, 13, 1, 24, 14, 1, 1441797, 0, 2, 1048581, 1, 2, 24, 2, 2, 24, 3, 2, 24, 4, 2, 24, 5, 2, 24, 6, 2, 24, 7, 2, 24, 8, 2, 24, 9, 2, 24, 10, 2, 24, 11, 2, 24, 12, 2, 24, 13, 2, 24, 14, 2, 1441797, 0, 3, 1048581, 1, 3, 24, 2, 3, 24, 3, 3, 24, 4, 3, 24, 5, 3, 24, 6, 3, 24, 7, 3, 24, 8, 3, 24, 9, 3, 24, 10, 3, 24, 11, 3, 24, 12, 3, 24, 13, 3, 24, 14, 3, 1441797, 0, 4, 1048581, 1, 4, 24, 2, 4, 24, 3, 4, 24, 4, 4, 24, 5, 4, 24, 6, 4, 24, 7, 4, 24, 8, 4, 24, 9, 4, 24, 10, 4, 24, 11, 4, 24, 12, 4, 24, 13, 4, 24, 14, 4, 1441797, 0, 5, 1048581, 1, 5, 24, 2, 5, 24, 3, 5, 24, 4, 5, 24, 5, 5, 24, 6, 5, 24, 7, 5, 24, 8, 5, 24, 9, 5, 24, 10, 5, 24, 11, 5, 24, 12, 5, 24, 13, 5, 24, 14, 5, 1441797, 0, 6, 1048581, 1, 6, 24, 2, 6, 24, 3, 6, 24, 4, 6, 24, 5, 6, 24, 6, 6, 24, 7, 6, 24, 8, 6, 24, 9, 6, 24, 10, 6, 24, 11, 6, 24, 12, 6, 24, 13, 6, 24, 14, 6, 1441797, 0, 7, 1048581, 1, 7, 24, 2, 7, 24, 3, 7, 24, 4, 7, 24, 5, 7, 24, 6, 7, 24, 7, 7, 24, 8, 7, 24, 9, 7, 24, 10, 7, 24, 11, 7, 24, 12, 7, 24, 13, 7, 24, 14, 7, 1441797, 0, 8, 1048581, 1, 8, 24, 2, 8, 24, 3, 8, 24, 4, 8, 24, 5, 8, 24, 6, 8, 24, 7, 8, 24, 8, 8, 24, 9, 8, 24, 10, 8, 24, 11, 8, 24, 12, 8, 24, 13, 8, 24, 14, 8, 1441797, 0, 9, 1048576, 1, 9, 655365, 2, 9, 655365, 3, 9, 655365, 4, 9, 655365, 5, 9, 655365, 6, 9, 655365, 7, 9, 655365, 8, 9, 655365, 9, 9, 655365, 10, 9, 655365, 11, 9, 655365, 12, 9, 655365, 13, 9, 655365, 14, 9, 655360)
+}
+
+[node name="Trim" type="GridMap" parent="."]
+mesh_library = ExtResource("3_635et")
+cell_octant_size = 4
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(0, 0, 0, 65536, 0, 28, 1, 0, 5, 65537, 0, 33, 2, 0, 5, 65538, 0, 33, 3, 0, 5, 65539, 0, 33, 4, 0, 5, 65540, 0, 33, 5, 0, 5, 65541, 0, 33, 6, 0, 5, 65542, 0, 33, 7, 0, 5, 65543, 0, 33, 8, 0, 5, 65544, 0, 33, 9, 0, 5, 65545, 0, 33, 10, 0, 5, 65546, 0, 33, 11, 0, 5, 65547, 0, 33, 12, 0, 5, 65548, 0, 33, 13, 0, 5, 65549, 0, 33, 14, 0, 1441792, 65550, 0, 1441820, 0, 1, 1048581, 65536, 1, 1048609, 14, 1, 1441797, 65550, 1, 1441825, 0, 2, 1048581, 65536, 2, 1048609, 14, 2, 1441797, 65550, 2, 1441825, 0, 3, 1048581, 65536, 3, 1048609, 14, 3, 1441797, 65550, 3, 1441825, 0, 4, 1048581, 65536, 4, 1048609, 14, 4, 1441797, 65550, 4, 1441825, 0, 5, 1048581, 65536, 5, 1048609, 14, 5, 1441797, 65550, 5, 1441825, 0, 6, 1048581, 65536, 6, 1048609, 14, 6, 1441797, 65550, 6, 1441825, 0, 7, 1048581, 65536, 7, 1048609, 14, 7, 1441797, 65550, 7, 1441825, 0, 8, 1048581, 65536, 8, 1048609, 14, 8, 1441797, 65550, 8, 1441825, 0, 9, 1048576, 65536, 9, 1048604, 1, 9, 655365, 65537, 9, 655393, 2, 9, 655365, 65538, 9, 655393, 3, 9, 655365, 65539, 9, 655393, 4, 9, 655365, 65540, 9, 655393, 5, 9, 655365, 65541, 9, 655393, 6, 9, 655365, 65542, 9, 655393, 7, 9, 655365, 65543, 9, 655393, 8, 9, 655365, 65544, 9, 655393, 9, 9, 655365, 65545, 9, 655393, 10, 9, 655365, 65546, 9, 655393, 11, 9, 655365, 65547, 9, 655393, 12, 9, 655365, 65548, 9, 655393, 13, 9, 655365, 65549, 9, 655393, 14, 9, 655360, 65550, 9, 655388)
+}
+
+[node name="Props" type="GridMap" parent="."]
+mesh_library = ExtResource("4_k601l")
+cell_size = Vector3(2, 4, 2)
+cell_octant_size = 4
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(7, 3, 8)
+}
+
+[node name="Clutter" type="Node3D" parent="."]
+
+[node name="Pickup_health" type="Area3D" parent="Clutter" instance=ExtResource("5_kolf0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 17)
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("6_fb42l")
+
+[node name="Pickup_cells" type="Area3D" parent="Clutter" instance=ExtResource("7_26lc0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, 17)
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("6_fb42l")
+kind = "cells"
+amount = 10
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_eqgqa")
+
+[node name="Player" type="CharacterBody3D" parent="." instance=ExtResource("8_41b4i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 15)
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("9_0f1l2")
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="Skitter" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.05, 5)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Skitter2" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.05, 5)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Skitter3" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.05, 5)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Skitter4" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.05, 5)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Skitter5" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.05, 11)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Skitter6" type="CharacterBody3D" parent="Enemies" instance=ExtResource("10_ennnc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0.05, 11)
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("11_2b35a")
+data = ExtResource("12_r0qk4")
+
+[node name="Baked" type="Node3D" parent="."]
+
+[node name="Shots" type="Node3D" parent="."]
+
+[node name="a_view" type="Marker3D" parent="Shots" groups=["shots"]]
+transform = Transform3D(1, 0, 0, 0, 0.9945219, 0.104528464, 0, -0.104528464, 0.9945219, 15, 1.65, 15)

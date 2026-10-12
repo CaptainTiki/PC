@@ -163,10 +163,8 @@ func box(st: SurfaceTool, mn: Vector3, mx: Vector3, tile_side: String, tile_top:
 		quad(st, Vector3(mn.x, mn.y, mn.z), Vector3(mx.x, mn.y, mn.z), Vector3(mx.x, mn.y, mx.z), Vector3(mn.x, mn.y, mx.z),
 			Vector3.DOWN, tile_bottom, Vector2(0, 0), Vector2(sx, 0), Vector2(sx, sz), Vector2(0, sz))
 
-func glow_box(st: SurfaceTool, mn: Vector3, mx: Vector3) -> void:
-	# every face sampled from the lit band of light_strip -> solid emissive block
-	var a := Vector2(0.3, 0.585)
-	var b := Vector2(0.4, 0.6)
+func glow_box(st: SurfaceTool, mn: Vector3, mx: Vector3, tile := "light_strip", a := Vector2(0.3, 0.585), b := Vector2(0.4, 0.6)) -> void:
+	# every face sampled from one small emissive patch -> solid glowing block
 	var faces := [
 		[Vector3(mn.x, mn.y, mx.z), Vector3(mx.x, mn.y, mx.z), Vector3(mx.x, mx.y, mx.z), Vector3(mn.x, mx.y, mx.z), Vector3.BACK],
 		[Vector3(mx.x, mn.y, mn.z), Vector3(mn.x, mn.y, mn.z), Vector3(mn.x, mx.y, mn.z), Vector3(mx.x, mx.y, mn.z), Vector3.FORWARD],
@@ -175,7 +173,7 @@ func glow_box(st: SurfaceTool, mn: Vector3, mx: Vector3) -> void:
 		[Vector3(mn.x, mx.y, mx.z), Vector3(mx.x, mx.y, mx.z), Vector3(mx.x, mx.y, mn.z), Vector3(mn.x, mx.y, mn.z), Vector3.UP],
 		[Vector3(mn.x, mn.y, mn.z), Vector3(mx.x, mn.y, mn.z), Vector3(mx.x, mn.y, mx.z), Vector3(mn.x, mn.y, mx.z), Vector3.DOWN]]
 	for f in faces:
-		quad(st, f[0], f[1], f[2], f[3], f[4], "light_strip", a, Vector2(b.x, a.y), b, Vector2(a.x, b.y))
+		quad(st, f[0], f[1], f[2], f[3], f[4], tile, a, Vector2(b.x, a.y), b, Vector2(a.x, b.y))
 
 func cylinder_y(st: SurfaceTool, center: Vector3, radius: float, y0: float, y1: float, tile: String, segs := 8) -> void:
 	for seg_y in [[y0, minf(y1, y0 + 2.0)], [y0 + 2.0, y1]]:
@@ -584,6 +582,21 @@ func build_props() -> void:
 	box(st, Vector3(-0.75, 0, -0.75), Vector3(0.75, 1.5, 0.75), "crate", "crate")
 	box(st, Vector3(-0.5, 1.5, -0.5), Vector3(0.5, 2.5, 0.5), "crate", "crate")
 	ResourceSaver.save(finish(st), "res://kit/crate_stack.res")
+	# pickups (spun/bobbed by scripts/pickup.gd)
+	st = new_st()
+	box(st, Vector3(-0.22, 0, -0.14), Vector3(0.22, 0.3, 0.14), "trim", "trim", "trim")
+	var red_a := Vector2(0.47, 0.47)
+	var red_b := Vector2(0.53, 0.53)
+	glow_box(st, Vector3(-0.05, 0.06, 0.14), Vector3(0.05, 0.26, 0.16), "warning_lamp", red_a, red_b)
+	glow_box(st, Vector3(-0.12, 0.13, 0.14), Vector3(0.12, 0.19, 0.16), "warning_lamp", red_a, red_b)
+	glow_box(st, Vector3(-0.05, 0.06, -0.16), Vector3(0.05, 0.26, -0.14), "warning_lamp", red_a, red_b)
+	glow_box(st, Vector3(-0.12, 0.13, -0.16), Vector3(0.12, 0.19, -0.14), "warning_lamp", red_a, red_b)
+	ResourceSaver.save(finish(st), "res://kit/pickup_health.res")
+	st = new_st()
+	box(st, Vector3(-0.1, 0, -0.1), Vector3(0.1, 0.42, 0.1), "kick", "trim", "trim")
+	glow_box(st, Vector3(-0.105, 0.12, -0.105), Vector3(0.105, 0.3, 0.105))
+	box(st, Vector3(-0.05, 0.42, -0.05), Vector3(0.05, 0.47, 0.05), "trim", "trim")
+	ResourceSaver.save(finish(st), "res://kit/pickup_cells.res")
 
 ## jambs: list of jamb sides in local X (-1 and/or +1). Jamb occupies |x| in [0.75, 1].
 func door_mesh(st: SurfaceTool, jambs: Array) -> void:

@@ -45,6 +45,7 @@ near = 0.03
 fov = 85.0
 
 [node name="Weapon" type="Node3D" parent="Head/Camera"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 script = ExtResource("3")
 data = ExtResource("4")
 impact_fx = ExtResource("5")

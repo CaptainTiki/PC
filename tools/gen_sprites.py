@@ -155,3 +155,103 @@ prev = Image.new("RGBA", (S * N, S), (40, 44, 52, 255))
 prev.alpha_composite(sheet)
 prev.resize((S * N * 3, S * 3), Image.NEAREST).save(os.path.join(ROOT, "shots", "drifter_sheet.png"))
 print("drifter sheet saved")
+
+
+# ======================================================================= SKITTER
+
+AMBER = [hexc(c) for c in ["#4a1d06", "#8a3a0a", "#d06a12", "#ffa53a", "#ffe0a8"]]
+
+
+def skitter_body(img, emi, cx, cy, phase, eye=1.0, flash=False, lunge=0.0, cut=None, off=(0, 0)):
+    w = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    e = Image.new("RGB", (S, S), (0, 0, 0))
+    d = ImageDraw.Draw(w)
+    de = ImageDraw.Draw(e)
+    # legs: three per side, jointed, scuttling
+    for side in (-1, 1):
+        for k in range(3):
+            a = phase + k * 2.1 + (0 if side < 0 else 1.05)
+            hip = (cx + side * (6 + k * 3), cy + 2)
+            knee = (cx + side * (14 + k * 4), cy - 6 + math.sin(a) * 3)
+            foot = (cx + side * (18 + k * 4) + math.cos(a) * 2, cy + 12)
+            d.line([hip, knee, foot], fill=VIOLET[1] + (255,), width=2)
+            d.line([hip, knee, foot], fill=VIOLET[4] + (255,), width=1)
+    # flat angular carapace, pitched forward when lunging
+    tilt = int(lunge * 4)
+    pts = [(cx - 15, cy + 2), (cx - 10, cy - 7 - tilt), (cx - 2, cy - 11 - tilt), (cx + 6, cy - 10 - tilt),
+           (cx + 14, cy - 5), (cx + 16, cy + 3), (cx + 6, cy + 7), (cx - 8, cy + 7)]
+    d.polygon(pts, fill=VIOLET[3] + (255,), outline=OUTLINE)
+    d.polygon([pts[1], pts[2], pts[3], (cx + 2, cy - 3)], fill=VIOLET[5] + (255,))
+    d.polygon([pts[5], pts[6], pts[7], (cx, cy + 2)], fill=VIOLET[2] + (255,))
+    for c in ([(cx - 11, cy), (cx - 5, cy - 4)], [(cx + 8, cy - 6), (cx + 12, cy + 1)]):
+        d.line(c, fill=AMBER[2] + (255,)); de.line(c, fill=AMBER[2])
+    # eye cluster
+    if eye > 0:
+        for (ex, ey, r) in [(-4, -2, 2.2), (1, -4, 2.8), (6, -1, 2.0)]:
+            r = r * eye
+            box = [cx + ex - r, cy + ey - r, cx + ex + r, cy + ey + r]
+            d.ellipse(box, fill=AMBER[3] + (255,), outline=OUTLINE)
+            de.ellipse(box, fill=AMBER[3])
+            d.point((cx + ex, cy + ey), fill=AMBER[4] + (255,)); de.point((cx + ex, cy + ey), fill=AMBER[4])
+    if cut is not None:
+        mask = Image.new("L", (S, S), 0)
+        md = ImageDraw.Draw(mask)
+        if cut < 0:
+            md.rectangle([0, 0, cx, S], fill=255)
+        else:
+            md.rectangle([cx, 0, S, S], fill=255)
+        w.putalpha(Image.fromarray(np.minimum(np.array(w.split()[3]), np.array(mask))))
+        e = Image.fromarray((np.array(e) * (np.array(mask)[..., None] / 255)).astype(np.uint8))
+    if flash:
+        a = np.array(w)
+        m = a[..., 3] > 0
+        a[m, :3] = (a[m, :3] * 0.3 + np.array([255, 240, 225]) * 0.7).astype(np.uint8)
+        w = Image.fromarray(a)
+    img.alpha_composite(w, dest=off)
+    emi.paste(e, off, mask=Image.fromarray((np.array(e).sum(-1) > 0).astype(np.uint8) * 255))
+
+
+def skitter_frame(i):
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    emi = Image.new("RGB", (S, S), (0, 0, 0))
+    cx, cy = 32, 44
+    if i in (0, 1):
+        skitter_body(img, emi, cx, cy - i, i * 2.4)
+    elif i == 2:
+        skitter_body(img, emi, cx, cy - 3, 1.0, eye=1.4, lunge=1.0)
+    elif i == 3:
+        skitter_body(img, emi, cx, cy + 1, 0.5, eye=0.6, flash=True)
+    else:
+        t = (i - 4) / 3.0
+        sep = int(1 + t * 9)
+        skitter_body(img, emi, cx, cy, 0.3, eye=max(0, 1 - t * 2), cut=-1, off=(-sep, int(t * 3)))
+        skitter_body(img, emi, cx, cy, 0.3, eye=0, cut=1, off=(sep, int(t * 4)))
+        g = np.random.default_rng(40 + i)
+        d = ImageDraw.Draw(img); de = ImageDraw.Draw(emi)
+        for _ in range(int(5 + t * 12)):
+            a = g.random() * math.tau
+            r = 4 + t * 22 * g.random()
+            x, y = cx + math.cos(a) * r, cy - 4 + math.sin(a) * r * 0.5
+            c = AMBER[g.integers(1, 4)]
+            d.rectangle([x, y, x + 1, y + 1], fill=c + (255,)); de.rectangle([x, y, x + 1, y + 1], fill=c)
+        if i == 7:
+            a = np.array(img)
+            a[..., 3] = (a[..., 3] * (g.random((S, S)) > 0.55)).astype(np.uint8)
+            img = Image.fromarray(a)
+            emi = Image.fromarray((np.array(emi) * (np.array(img)[..., 3:] > 0)).astype(np.uint8))
+    return img, emi
+
+
+sheet = Image.new("RGBA", (S * N, S), (0, 0, 0, 0))
+esheet = Image.new("RGB", (S * N, S), (0, 0, 0))
+for i in range(N):
+    f, e = skitter_frame(i)
+    sheet.alpha_composite(f, dest=(i * S, 0))
+    esheet.paste(e, (i * S, 0))
+sheet.save(os.path.join(OUT, "skitter_albedo.png"))
+esheet.save(os.path.join(OUT, "skitter_emission.png"))
+prev = Image.new("RGBA", (S * N, S), (40, 44, 52, 255))
+prev.alpha_composite(sheet)
+prev.resize((S * N * 3, S * 3), Image.NEAREST).save(os.path.join(ROOT, "shots", "skitter_sheet.png"))
+print("skitter sheet saved")
+
