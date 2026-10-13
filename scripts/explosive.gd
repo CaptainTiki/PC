@@ -30,7 +30,7 @@ func _explode() -> void:
 	q.transform = Transform3D(Basis(), centre)
 	q.collision_mask = 1 | 2 | 4
 	q.exclude = [get_rid()]
-	for hit in get_world_3d().direct_space_state.intersect_shape(q, 32):
+	for hit in get_world_3d().direct_space_state.intersect_shape(q, 256):
 		var c: Object = hit.collider
 		if c is Node3D and c.has_method("take_hit"):
 			var n := c as Node3D

@@ -33,5 +33,9 @@ func show_banner(text: String) -> void:
 	banner.text = text
 	banner.visible = true
 
-func set_prompt(text: String) -> void:
-	prompt_label.text = ("[E]  " + text) if text != "" else ""
+## usable = false shows the text alone (a locked door saying why it's shut)
+func set_prompt(text: String, usable := true) -> void:
+	if text == "":
+		prompt_label.text = ""
+	else:
+		prompt_label.text = ("[E]  " + text) if usable else text

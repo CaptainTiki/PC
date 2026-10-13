@@ -789,6 +789,22 @@ func build_device_meshes() -> void:
 	quad(st, Vector3(-0.7, 0, 0.02), Vector3(0.7, 0, 0.02), Vector3(0.7, 1.2, 0.02), Vector3(-0.7, 1.2, 0.02), Vector3.BACK, "vent", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
 	quad(st, Vector3(0.7, 0, -0.02), Vector3(-0.7, 0, -0.02), Vector3(-0.7, 1.2, -0.02), Vector3(0.7, 1.2, -0.02), Vector3.FORWARD, "vent", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
 	ResourceSaver.save(finish(st), "res://kit/vent_cover.res")
+	# door release: wall panel (back on z = 0, faces +Z) with a big glowing button
+	st = new_st()
+	box(st, Vector3(-0.3, 0.95, 0.0), Vector3(0.3, 1.75, 0.1), "kick", "trim")
+	box(st, Vector3(-0.22, 1.05, 0.1), Vector3(0.22, 1.25, 0.13), "hazard", "trim")
+	glow_box(st, Vector3(-0.1, 1.4, 0.1), Vector3(0.1, 1.6, 0.16), "warning_lamp", Vector2(0.47, 0.47), Vector2(0.53, 0.53))
+	ResourceSaver.save(finish(st), "res://kit/switch_panel.res")
+	# lockdown console: pedestal with a tilted screen facing +Z
+	st = new_st()
+	box(st, Vector3(-0.45, 0, -0.3), Vector3(0.45, 0.85, 0.3), "kick", "trim")
+	var a := Vector3(-0.4, 0.9, 0.2)
+	quad(st, a, a + Vector3(0.8, 0, 0), a + Vector3(0.8, 0.4, -0.3), a + Vector3(0, 0.4, -0.3), Vector3(0, 0.6, 0.8).normalized(), "console",
+		Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
+	quad(st, a + Vector3(0.8, -0.05, -0.02), a + Vector3(0, -0.05, -0.02), a + Vector3(0, 0.38, -0.34), a + Vector3(0.8, 0.38, -0.34), Vector3(0, -0.6, -0.8).normalized(), "trim",
+		Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
+	glow_box(st, Vector3(-0.3, 0.86, 0.22), Vector3(0.3, 0.9, 0.28), "warning_lamp", Vector2(0.47, 0.47), Vector2(0.53, 0.53))
+	ResourceSaver.save(finish(st), "res://kit/switch_console.res")
 
 func build_floors() -> void:
 	var st: SurfaceTool

@@ -596,7 +596,7 @@ slab_mesh = ExtResource("34_3vaxc")
 open_offset = Vector3(-1.72, 0, 0)
 slab_width = 1.75
 slab_center_x = 0.125
-locked = true
+lock = "power"
 
 [node name="Light_wall_light3" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.85, 2.9, 15)
@@ -614,7 +614,7 @@ slab_mesh = ExtResource("34_3vaxc")
 open_offset = Vector3(-1.72, 0, 0)
 slab_width = 1.75
 slab_center_x = 0.125
-locked = true
+lock = "power"
 
 [node name="Light_wall_light4" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 86.15, 2.9, 17)

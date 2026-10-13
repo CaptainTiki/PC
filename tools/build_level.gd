@@ -33,6 +33,7 @@ extends SceneTree
 ##   actors  @  player start   e  Drifter   s  Skitter
 ##   items   h  health   a  energy cells   E  section exit
 ##   other   D  door (DD = double door)    k  power breaker (against the nearest wall)
+##           r  door release panel (on the nearest wall)   y  lockdown console (back to the wall)
 ##
 ## Sections after the maps:
 ##   [stairs]  stair <c> <r> <n|e|s|w> [floor]   bottom cell + ascent direction; the flight is
@@ -41,6 +42,11 @@ extends SceneTree
 ##             Breakers 'k' power zones in reading order (floor 0 first, row by row).
 ##   [damage]  zone <c0> <r0> <c1> <r1>   damaged area: lights ~45%, some flicker or
 ##             are dead, ceiling trim goes patchy
+##   [locks]   lock <c> <r> <f> <jammed|inside|lockdown|seal>   door lock (both halves of a double door)
+##   [links]   link <c> <r> <f> to <c> <r> <f> [<c> <r> <f> ...]   switch ('r' / 'y') -> door cells it unlocks
+##   [rooms]   room <template> <c> <r> <n|e|s|w> [floor] [variant]   stamps rooms/<template>.txt with its
+##             door 'D' on cell c,r and the door facing n/e/s/w. Variant rolled per room if omitted.
+##             In templates: '$' rolls loot (health / cells / nothing), '&' rolls a skitter or nothing.
 ##   [shots]   shot <name> <col> <row> <yaw> <pitch> [floor]   screenshot markers
 
 const WALLS := {
@@ -54,7 +60,7 @@ const FLOORS := {
 	"x": "floor", "X": "floor", "@": "floor", "e": "floor", "D": "door",
 	"s": "floor", "h": "floor", "a": "floor", "E": "floor",
 	"k": "floor", "b": "floor", "n": "floor_metal", "j": "floor", "l": "floor_metal",
-	"c": "catwalk",
+	"c": "catwalk", "r": "floor", "y": "floor",
 }
 ## things that can stand on a catwalk: with 2+ catwalk neighbours the cell is catwalk
 const ON_CATWALK := "@eshaExXb"
@@ -204,6 +210,100 @@ func parse_rect(t: PackedStringArray) -> Rect2i:
 	var b := Vector2i(int(t[3]), int(t[4]))
 	return Rect2i(a, b - a + Vector2i.ONE)
 
+## a door cell plus the other half of a double door
+func door_cells(cell: Vector3i) -> Array[Vector3i]:
+	var out: Array[Vector3i] = [cell]
+	if ch(cell.y, cell.x, cell.z) != "D":
+		push_warning("lock/link target %s is not a door" % cell)
+	for d in MDIRS:
+		if ch(cell.y, cell.x + d.x, cell.z + d.y) == "D":
+			out.append(Vector3i(cell.x + d.x, cell.y, cell.z + d.y))
+	return out
+
+## rooms/<name>.txt: "[variant]" headers, each followed by an ASCII room drawn with its
+## door at the bottom (facing south). Returns variant -> rows.
+func load_template(name: String) -> Dictionary:
+	var out := {}
+	var cur := "default"
+	var path := "res://rooms/%s.txt" % name
+	if not FileAccess.file_exists(path):
+		push_warning("no room template " + path)
+		return out
+	for line in FileAccess.get_file_as_string(path).split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("#!") or (t.begins_with(";")):
+			continue
+		if t.begins_with("[") and t.ends_with("]"):
+			cur = t.substr(1, t.length() - 2)
+			out[cur] = PackedStringArray()
+			continue
+		if t == "":
+			continue
+		if not out.has(cur):
+			out[cur] = PackedStringArray()
+		out[cur].append(line.rstrip(" \r"))
+	return out
+
+func rotate_cw(rows: PackedStringArray) -> PackedStringArray:
+	var h := rows.size()
+	var w := 0
+	for row in rows:
+		w = maxi(w, row.length())
+	var out := PackedStringArray()
+	for y in w:
+		var line := ""
+		for x in h:
+			var row: String = rows[h - 1 - x]
+			line += row[y] if y < row.length() else " "
+		out.append(line)
+	return out
+
+func set_ch(f: int, c: int, r: int, v: String) -> void:
+	while floors.size() <= f:
+		floors.append(PackedStringArray())
+	var rows: PackedStringArray = floors[f]
+	while rows.size() <= r:
+		rows.append("")
+	var line: String = rows[r]
+	while line.length() <= c:
+		line += " "
+	rows[r] = line.substr(0, c) + v + line.substr(c + 1)
+	floors[f] = rows
+
+## Stamp a room template with its door on (c, r), door facing `facing`.
+func stamp_room(name: String, c: int, r: int, facing: String, f: int, variant: String) -> void:
+	var tpl := load_template(name)
+	if tpl.is_empty():
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%s:%d:%d:%d" % [name, c, r, f])
+	var keys := tpl.keys()
+	if variant == "" or not tpl.has(variant):
+		variant = keys[rng.randi() % keys.size()]
+	var rows: PackedStringArray = tpl[variant]
+	for i in {"s": 0, "w": 1, "n": 2, "e": 3}.get(facing, 0):
+		rows = rotate_cw(rows)
+	var anchor := Vector2i(-1, -1)
+	for y in rows.size():
+		var x := rows[y].find("D")
+		if x >= 0:
+			anchor = Vector2i(x, y)
+			break
+	if anchor.x < 0:
+		push_warning("room template %s/%s has no door 'D'" % [name, variant])
+		return
+	for y in rows.size():
+		for x in rows[y].length():
+			var v := rows[y][x]
+			if v == " ":
+				continue
+			if v == "$":
+				var roll_v := rng.randf()
+				v = "h" if roll_v < 0.3 else ("a" if roll_v < 0.65 else ".")
+			elif v == "&":
+				v = "s" if rng.randf() < 0.5 else "."
+			set_ch(f, c + x - anchor.x, r + y - anchor.y, v)
+
 var lroot: Node3D
 var clutter: Node3D
 
@@ -220,7 +320,7 @@ func _init() -> void:
 	var src: String = args[0] if args.size() > 0 else "levels/test_room.txt"
 	var text := FileAccess.open("res://" + src, FileAccess.READ).get_as_text()
 	var maps: Array = [[]]
-	var sections := {"shots": [], "damage": [], "stairs": [], "power": []}
+	var sections := {"shots": [], "damage": [], "stairs": [], "power": [], "locks": [], "links": [], "rooms": []}
 	var cur := "map"
 	for line in text.split("\n"):
 		var t := line.strip_edges()
@@ -246,6 +346,10 @@ func _init() -> void:
 		while rows.size() > 0 and rows[rows.size() - 1].strip_edges() == "":
 			rows.remove_at(rows.size() - 1)
 		floors.append(rows)
+	for line in sections.rooms:
+		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
+		if t.size() >= 5 and t[0] == "room":
+			stamp_room(t[1], int(t[2]), int(t[3]), t[4], int(t[5]) if t.size() > 5 else 0, t[6] if t.size() > 6 else "")
 	for f in floors.size():
 		var rows: PackedStringArray = floors[f]
 		for r in rows.size():
@@ -287,11 +391,29 @@ func _init() -> void:
 			# top landing: no railing on the edge back toward the flight
 			no_rail["%d,%d,%d,%d" % [c0 + d.x * 3, f + 1, r0 + d.y * 3, (di + 2) % 4]] = true
 
+	var door_locks := {}
+	for line in sections.locks:
+		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
+		if t.size() >= 5 and t[0] == "lock":
+			for dc in door_cells(Vector3i(int(t[1]), int(t[3]), int(t[2]))):
+				door_locks[dc] = t[4]
+	var links := {}      # switch cell -> door cells
+	for line in sections.links:
+		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
+		if t.size() >= 8 and t[0] == "link" and t[4] == "to":
+			var cells: Array[Vector3i] = []
+			var i := 5
+			while i + 2 < t.size():
+				cells.append_array(door_cells(Vector3i(int(t[i]), int(t[i + 2]), int(t[i + 1]))))
+				i += 3
+			links[Vector3i(int(t[1]), int(t[3]), int(t[2]))] = cells
+
 	lroot = Node3D.new()
 	lroot.name = src.get_file().get_basename().to_pascal_case()
 	lroot.set_script(load("res://scripts/level.gd"))
 	lroot.damaged_zones = zones
 	lroot.power_zones = pzones
+	lroot.door_locks = door_locks
 	var grid := new_grid("Grid", "res://kit/structure.meshlib.res", Vector3(2, 4, 2), lroot)
 	var trim := new_grid("Trim", "res://kit/trim.meshlib.res", Vector3(2, 2, 2), lroot)
 	var props := new_grid("Props", "res://kit/props.meshlib.res", Vector3(2, 4, 2), lroot)
@@ -317,6 +439,9 @@ func _init() -> void:
 	var vent_scene: PackedScene = load("res://scenes/props/vent_cover.tscn")
 	var elevator_scene: PackedScene = load("res://scenes/props/elevator.tscn")
 	var post_scene: PackedScene = load("res://scenes/props/call_post.tscn")
+	var release_scene: PackedScene = load("res://scenes/props/switch_panel.tscn")
+	var console_scene: PackedScene = load("res://scenes/props/switch_console.tscn")
+	var switches := {}   # cell -> Switch
 
 	var player_pos := Vector3.ZERO
 	var enemy_cells: Array[Vector3i] = []
@@ -574,6 +699,17 @@ func _init() -> void:
 						if breakers >= pzones.size():
 							push_warning("breaker %d at %d,%d has no [power] zone" % [breakers, c, r])
 						breakers += 1
+					"r":
+						var wi := wall_dir(f, c, r)
+						var d: Vector2i = MDIRS[maxi(wi, 0)]
+						var sw := place(release_scene, pos + Vector3(d.x, 0, d.y) * 1.74, (maxi(wi, 0) + 2) % 4, devices) as Switch
+						sw.name = "DoorRelease"
+						switches[cell] = sw
+					"y":
+						var wi := wall_dir(f, c, r)
+						var sw := place(console_scene, pos, (wi + 2) % 4 if wi >= 0 else 0, devices) as Switch
+						sw.name = "LockdownConsole"
+						switches[cell] = sw
 					"x", "X":
 						var crate := place(scenes[s], pos)
 						crate.rotation.y = deg_to_rad(float((c * 37 + r * 91) % 31) - 15.0)
@@ -627,6 +763,20 @@ func _init() -> void:
 	var skitter: PackedScene = load("res://scenes/actors/skitter.tscn")
 	for sc in skitter_cells:
 		place(skitter, grid.map_to_local(sc) + Vector3(0, 0.05, 0), 0, enemies)
+
+	for sc in links:
+		if not switches.has(sc):
+			push_warning("[links] %s has no switch ('r' or 'y') on the map" % sc)
+			continue
+		var sw: Switch = switches[sc]
+		var cells: Array[Vector3i] = []
+		cells.assign(links[sc])
+		sw.targets = cells
+		var reason: String = door_locks.get(cells[0], "") if cells.size() > 0 else ""
+		sw.action = {"lockdown": "Lift lockdown", "seal": "Release seal"}.get(reason, "Release door")
+	for sc in switches:
+		if not links.has(sc):
+			push_warning("switch at %s isn't linked to any door ([links])" % sc)
 
 	lroot.bake()
 

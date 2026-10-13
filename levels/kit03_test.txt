@@ -1,0 +1,53 @@
+
+                   ####
+                   #l,#
+                   #,,R
+                   #,*#
+                   #,,#
+                   ##l#
+                    ###
+[floor 1]
+
+                  ####
+              dddd#,^#     ##########
+            ##### ####     #........#######
+            #x,*#          #..*....r#.....#
+            #,,,#  ####    #......*.D.....#
+            #,,a#  #,^#    #........#..*..#
+ #############D#####D##########D#####.....#
+ #.@*....*....*...D*....*....*....*.D.....#
+ #................D.................D.....#
+ ######################D#######D#####..*E.#
+                    #.*..#  #.....# #.....#
+                    #r...#dd#..*..# #######
+                    #..y.#  #....h#
+                    ######  #######
+[rooms]
+room cabin 4 7 s 1
+room cabin 9 7 s 1
+room cabin 4 10 n 1
+room cabin 9 10 n 1
+room cabin 14 10 n 1
+room closet 24 7 s 1
+[locks]
+lock 18 8 1 jammed
+lock 23 10 1 inside
+lock 36 8 1 lockdown
+lock 31 7 1 seal
+[links]
+link 21 12 1 to 23 10 1
+link 23 13 1 to 36 8 1
+link 35 4 1 to 31 7 1
+[shots]
+shot a_jammed 14 9 -90 -2 1
+shot b_utility 14 6 0 -8 1
+shot c_riser 19 2 -90 -40 1
+shot d_maint 21 5 0 -4 0
+shot e_closet 20 6 180 -6 1
+shot f_security 27 9 160 -4 1
+shot g_inside 22 12 -30 -8 1
+shot h_seal 31 8 0 -4 1
+shot i_cabins 7 9 -45 -6 1
+shot j_inside_far 23 8 180 10 1
+shot k_seal_far 31 9 0 10 1
+shot l_jammed_far 13 8 -90 6 1

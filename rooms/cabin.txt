@@ -1,0 +1,26 @@
+; Crew cabin: 3x3 interior, door at the bottom (stamped facing n/e/s/w).
+; $ = loot roll (health / cells / nothing), & = maybe a skitter.
+[single]
+#####
+#x.$#
+#.*.#
+#...#
+##D##
+[double]
+##K##
+#$.x#
+#.*.#
+#x..#
+##D##
+[trashed]
+#####
+#X.&#
+#.x.#
+#$..#
+##D##
+[lit]
+#L#L#
+#..$#
+#x..#
+#..x#
+##D##

@@ -45,6 +45,21 @@ zones in reading order), `[damage] zone …`, `[shots] shot name c r yaw pitch [
 Railings, ceiling removal under open air, duct/shaft mouths, vent covers and
 elevator call buttons are all placed automatically.
 
+Doors and switches: `[locks] lock c r f jammed|inside|lockdown|seal` locks a door (both
+halves of a double door); `r` (door release, on the nearest wall) and `y` (lockdown
+console) are switches, wired with `[links] link c r f to c r f ...`. Locks live in
+`Level.door_locks`, so re-baking keeps them; locked doors are walls to the flow field.
+Door states: open = cyan lamp, no power = dark, jammed = amber + sparks, locked from the
+inside = red, lockdown = magenta pulse, pressure seal = white. Look at a locked door to
+see why it's shut.
+
+Room templates: `[rooms] room <template> c r n|e|s|w [floor] [variant]` stamps
+`rooms/<template>.txt` with its door `D` on c,r facing that way. Each template has
+`[variant]` blocks (rolled per room when not named); `$` rolls loot (health / cells /
+nothing) and `&` maybe a skitter, per placed room. Loot ends up as normal nodes, so
+it's editable in Godot after the build. Templates: `cabin` (single, double, trashed,
+lit), `closet` (shelves, mop).
+
 ## Levels
 - `levels/wing01` — Collider control wing (main scene). Arrival bay -> control room ->
   cargo bay -> damaged corridor -> pipe gallery -> airlock -> breach chamber (exit).
@@ -54,6 +69,11 @@ elevator call buttons are all placed automatically.
   control room with a glass wall over the atrium and the breaker -> back down through
   the now-unlocked door -> lower hall -> ladder or elevator to the mezzanine ->
   maintenance shaft -> exit. 20 anomalies; bot clears it in ~70s.
+
+- `levels/kit03_test` — door and detour test map (pass 1 of deck03): jammed corridor with
+  the duct/riser/ladder detour through maintenance, a security post locked from the
+  inside reached by a duct from the rec room, a lockdown shutter, a pressure seal, and
+  template cabins/closet.
 
 ## Gameplay (vertical slice core)
 - Controls: WASD move, mouse look, LMB fire, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
@@ -78,6 +98,7 @@ elevator call buttons are all placed automatically.
 - `-- --vmcheck`  fire once and capture the viewmodel frames
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --doorcheck` scripted checks in kit03_test: every door state, the switches, and the duct -> riser -> ladder -> maintenance -> closet detour
 - `-- --mechcheck` scripted checks in deck02: explosive chain, vent cover + crouch through the duct, ladder, elevator call/ride, breaker
 - `-- --flashcheck` every shot marker with the flashlight off and on
 - `python3 tools/gen_sprites.py` regenerates enemy sprite sheets

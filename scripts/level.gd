@@ -47,6 +47,9 @@ const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 ## Unpowered areas (grid cells, all floors). Their lights bake switched off and
 ## their doors locked until a Breaker calls power_on(index).
 @export var power_zones: Array[Rect2i] = []
+## Door locks by grid cell (Vector3i -> "jammed" / "inside" / "lockdown" / "seal").
+## Kept here so a re-bake keeps them; Switches unlock cells through unlock().
+@export var door_locks: Dictionary = {}
 
 @onready var grid: GridMap = $Grid
 var meta: Dictionary
@@ -63,6 +66,8 @@ func _ready() -> void:
 		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
+	elif "--doorcheck" in args:
+		add_child(preload("res://scripts/door_check.gd").new())
 	elif "--mechcheck" in args:
 		add_child(preload("res://scripts/mech_check.gd").new())
 	elif "--vmcheck" in args:
@@ -75,6 +80,7 @@ func bake() -> void:
 	if old:
 		remove_child(old)
 		old.free()
+	_doors.clear()
 	var baked := Node3D.new()
 	baked.name = "Baked"
 	add_child(baked)
@@ -109,13 +115,34 @@ func power_on(zone: int) -> void:
 			if POWER_SWAP.has(nm):
 				gm.set_cell_item(cell, ids[POWER_SWAP[nm]], gm.get_cell_item_orientation(cell))
 	for n in get_tree().get_nodes_in_group("power_%d" % zone):
-		if n is Door:
-			(n as Door).locked = false
+		if n is Door and (n as Door).lock == "power":
+			(n as Door).lock = "none"
 		elif n is Light3D:
 			(n as Light3D).visible = true
+	_walk.clear()
+	_flows.clear()
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_node("Hud"):
 		p.get_node("Hud").toast("POWER RESTORED", Color(0.5, 0.95, 1.0))
+
+## Baked door at a grid cell (null if none).
+func door_at(cell: Vector3i) -> Door:
+	if _doors.is_empty():
+		var baked := get_node_or_null("Baked")
+		if baked:
+			for n in baked.get_children():
+				if n is Door:
+					_doors[grid.local_to_map((n as Door).position)] = n
+	return _doors.get(cell)
+
+## Switch callback: unlock the doors on these cells (whatever their lock reason).
+func unlock(cells: Array) -> void:
+	for c in cells:
+		var d := door_at(c)
+		if d:
+			d.lock = "none"
+	_walk.clear()
+	_flows.clear()
 
 func _own(parent: Node, n: Node, root: Node) -> void:
 	parent.add_child(n, true)
@@ -179,9 +206,11 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			else:
 				door.slab_mesh = load("res://kit/door_slab.res")
 			door.transform = Transform3D(basis, origin)
+			door.lock = door_locks.get(cell, "none")
 			var dz := _power_zone(cell)
 			if dz >= 0:
-				door.locked = true
+				if door.lock == "none":
+					door.lock = "power"
 				door.add_to_group("power_%d" % dz, true)
 			_own(parent, door, root)
 
@@ -196,6 +225,7 @@ var _walk := {}
 var _stairs := {}     # cell -> [segment, ascent dir]
 var _flows := {}
 var _ladders := {}    # bottom cell <-> landing cell (only for climbers, i.e. the bot)
+var _doors := {}      # cell -> baked Door
 
 func _build_walk() -> void:
 	for cell in grid.get_used_cells():
@@ -204,6 +234,10 @@ func _build_walk() -> void:
 			if nm.begins_with(w):
 				_walk[cell] = true
 				break
+		if nm.begins_with("door"):
+			var d := door_at(cell)
+			if d and d.lock != "none":
+				_walk.erase(cell)      # locked doors are walls until unlocked
 		if nm.begins_with("stair_"):
 			var asc := grid.get_basis_with_orthogonal_index(grid.get_cell_item_orientation(cell)) * Vector3(0, 0, -1)
 			_stairs[cell] = [int(nm.substr(6)), Vector3i(roundi(asc.x), 0, roundi(asc.z))]

@@ -1,0 +1,11 @@
+; Small closet: 2x2 interior, door bottom-left.
+[shelves]
+####
+#$x#
+#..#
+#D##
+[mop]
+####
+#x$#
+#.&#
+#D##

@@ -105,20 +105,31 @@ func _on_ladder() -> bool:
 	# standing: only start climbing from the bottom, by pushing forward
 	return intent.move.y < -0.1 and global_position.y < ladder.global_position.y + 1.0
 
-## Look at a usable thing (anything with interact()) and press use.
+## Look at a usable thing (anything with interact(), or whose parent has it, e.g. a
+## door's slab) and press use. Things with can_use() == false only show their prompt.
 func _update_use() -> void:
 	var cam_t := camera.global_transform
 	var q := PhysicsRayQueryParameters3D.create(cam_t.origin, cam_t.origin - cam_t.basis.z * use_range, MASK_USE)
 	q.exclude = [get_rid()]
 	q.collide_with_areas = true
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	var target: Object = hit.collider if hit and hit.collider.has_method("interact") else null
-	if target != _look_target:
-		_look_target = target
-		hud.set_prompt(target.prompt() if target and target.has_method("prompt") else "")
-	if intent.consume_use() and target:
+	var pressed := intent.consume_use()
+	var target: Object = null
+	if hit:
+		var c: Object = hit.collider
+		if c.has_method("interact"):
+			target = c
+		elif c is Node and (c as Node).get_parent() and (c as Node).get_parent().has_method("interact"):
+			target = (c as Node).get_parent()
+	_look_target = target
+	if target == null:
+		hud.set_prompt("")
+		return
+	var usable: bool = target.can_use() if target.has_method("can_use") else true
+	if pressed and usable:
 		target.interact(self)
-		hud.set_prompt(target.prompt() if target.has_method("prompt") else "")
+		usable = target.can_use() if target.has_method("can_use") else true
+	hud.set_prompt(target.prompt() if target.has_method("prompt") else "", usable)
 
 func _update_crouch(delta: float) -> void:
 	var want := intent.crouch
