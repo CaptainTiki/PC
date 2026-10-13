@@ -11,6 +11,7 @@ var fire := false
 var flashlight := false   # true for one frame when toggled
 var use := false          # true for one frame when pressed
 var crouch := false       # held
+var jump := false         # true for one frame when pressed
 
 func _unhandled_input(e: InputEvent) -> void:
 	if bot:
@@ -33,6 +34,8 @@ func _process(_d: float) -> void:
 	if Input.is_action_just_pressed("use"):
 		use = true
 	crouch = Input.is_action_pressed("crouch")
+	if Input.is_action_just_pressed("jump"):
+		jump = true
 
 func consume_look() -> Vector2:
 	var l := look
@@ -48,3 +51,8 @@ func consume_use() -> bool:
 	var u := use
 	use = false
 	return u
+
+func consume_jump() -> bool:
+	var j := jump
+	jump = false
+	return j

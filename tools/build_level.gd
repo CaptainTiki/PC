@@ -34,6 +34,11 @@ extends SceneTree
 ##   items   h  health   a  energy cells   E  section exit
 ##   other   D  door (DD = double door)    k  power breaker (against the nearest wall)
 ##           r  door release panel (on the nearest wall)   y  lockdown console (back to the wall)
+##           q  crew keycard
+##   climb   u  climb cell under a ceiling grate: crate, ledge 2 m up on the wall, short ladder
+##              up through the grate (the cell above must be 'G'; landing = cell above that wall)
+##           G  ceiling grate: a hatch in this floor with a shootable grate (drop through it,
+##              or climb up to it from a 'u' below)
 ##
 ## Sections after the maps:
 ##   [stairs]  stair <c> <r> <n|e|s|w> [floor]   bottom cell + ascent direction; the flight is
@@ -43,6 +48,8 @@ extends SceneTree
 ##   [damage]  zone <c0> <r0> <c1> <r1>   damaged area: lights ~45%, some flicker or
 ##             are dead, ceiling trim goes patchy
 ##   [locks]   lock <c> <r> <f> <jammed|inside|lockdown|seal>   door lock (both halves of a double door)
+##             lock <c> <r> <f> oneway <n|e|s|w>   opens only from that side, then stays open
+##             lock <c> <r> <f> keycard [id]       opens once you carry that keycard (default crew)
 ##   [links]   link <c> <r> <f> to <c> <r> <f> [<c> <r> <f> ...]   switch ('r' / 'y') -> door cells it unlocks
 ##   [rooms]   room <template> <c> <r> <n|e|s|w> [floor] [variant]   stamps rooms/<template>.txt with its
 ##             door 'D' on cell c,r and the door facing n/e/s/w. Variant rolled per room if omitted.
@@ -60,12 +67,12 @@ const FLOORS := {
 	"x": "floor", "X": "floor", "@": "floor", "e": "floor", "D": "door",
 	"s": "floor", "h": "floor", "a": "floor", "E": "floor",
 	"k": "floor", "b": "floor", "n": "floor_metal", "j": "floor", "l": "floor_metal",
-	"c": "catwalk", "r": "floor", "y": "floor",
+	"c": "catwalk", "r": "floor", "y": "floor", "u": "floor_metal", "q": "floor",
 }
 ## things that can stand on a catwalk: with 2+ catwalk neighbours the cell is catwalk
 const ON_CATWALK := "@eshaExXb"
-const OPEN_ONLY := "/^vcQ"     # open (not walls) but not plain floors
-const AIR_ABOVE := "^vcQ"      # cells that leave the floor below without a ceiling
+const OPEN_ONLY := "/^vcQG"     # open (not walls) but not plain floors
+const AIR_ABOVE := "^vcQG"      # cells that leave the floor below without a ceiling
 const OPEN_VARIANT := {"floor": "floor_open", "floor_metal": "floor_metal_open", "floor_grate": "floor_grate_open",
 	"floor_line": "floor_line_open", "floor_light": "floor_open", "floor_light_off": "floor_open"}
 # DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
@@ -115,7 +122,7 @@ func opens(f: int, c: int, r: int) -> bool:
 ## no floor here: open air
 func is_air(f: int, c: int, r: int) -> bool:
 	var s := ch(f, c, r)
-	return s == "^" or s == "v" or (s == "Q" and ch(f - 1, c, r) == "Q")
+	return s == "^" or s == "v" or s == "G" or (s == "Q" and ch(f - 1, c, r) == "Q")
 
 func open_above(f: int, c: int, r: int) -> bool:
 	return AIR_ABOVE.contains(ch(f + 1, c, r))
@@ -396,7 +403,7 @@ func _init() -> void:
 		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
 		if t.size() >= 5 and t[0] == "lock":
 			for dc in door_cells(Vector3i(int(t[1]), int(t[3]), int(t[2]))):
-				door_locks[dc] = t[4]
+				door_locks[dc] = t[4] + (":" + t[5] if t.size() > 5 else "")
 	var links := {}      # switch cell -> door cells
 	for line in sections.links:
 		var t: PackedStringArray = (line as String).strip_edges().split(" ", false)
@@ -440,6 +447,8 @@ func _init() -> void:
 	var elevator_scene: PackedScene = load("res://scenes/props/elevator.tscn")
 	var post_scene: PackedScene = load("res://scenes/props/call_post.tscn")
 	var release_scene: PackedScene = load("res://scenes/props/switch_panel.tscn")
+	var grate_scene: PackedScene = load("res://scenes/props/ceiling_grate.tscn")
+	var keycard_scene: PackedScene = load("res://scenes/props/keycard.tscn")
 	var console_scene: PackedScene = load("res://scenes/props/switch_console.tscn")
 	var switches := {}   # cell -> Switch
 
@@ -453,7 +462,8 @@ func _init() -> void:
 		var rows: PackedStringArray = floors[f]
 		for r in rows.size():
 			for c in rows[r].length():
-				if rows[r][c] != "l":
+				var lch := rows[r][c]
+				if lch != "l" and lch != "u":
 					continue
 				var li := -1
 				for i in 4:
@@ -464,13 +474,23 @@ func _init() -> void:
 				if li < 0:
 					push_warning("ladder at %d,%d floor %d: needs a wall with a floor cell above it" % [c, r, f])
 					continue
-				if ch(f + 1, c, r) != "^":
-					push_warning("ladder at %d,%d floor %d: the cell above should be '^'" % [c, r, f])
+				if ch(f + 1, c, r) != "^" and ch(f + 1, c, r) != "G":
+					push_warning("ladder at %d,%d floor %d: the cell above should be '^' or a grate 'G'" % [c, r, f])
 				var d2: Vector2i = MDIRS[li]
 				ladder_walls[Vector3i(c + d2.x, f, r + d2.y)] = true
 				no_rail["%d,%d,%d,%d" % [c + d2.x, f + 1, r + d2.y, (li + 2) % 4]] = true
-				var lad := place(ladder_scene, grid.map_to_local(Vector3i(c, f, r)) + Vector3(d2.x, 0, d2.y), (li + 2) % 4, devices)
-				lad.name = "Ladder"
+				var base := grid.map_to_local(Vector3i(c, f, r)) + Vector3(d2.x, 0, d2.y)
+				if lch == "u":
+					# climb: crate on the room side, a ledge 2 m up on the wall, short ladder to the grate
+					var lad2 := place(ladder_scene, base + Vector3(0, 2.0, 0), (li + 2) % 4, devices) as Ladder
+					lad2.height = 2.0
+					lad2.name = "Ladder"
+					props.set_cell_item(Vector3i(c, f, r), pid["ledge"], orient_k(li, props))
+					var cr := place(scenes["x"], grid.map_to_local(Vector3i(c, f, r)) - Vector3(d2.x, 0, d2.y) * 0.45)
+					cr.rotation.y = deg_to_rad(8.0)
+				else:
+					var lad := place(ladder_scene, base, (li + 2) % 4, devices)
+					lad.name = "Ladder"
 
 	for f in floors.size():
 		var rows: PackedStringArray = floors[f]
@@ -562,7 +582,10 @@ func _init() -> void:
 					grid.set_cell_item(cell, sid[prefix + TUBES[tc[1]]], orient_k((4 - int(tc[3])) % 4, grid))
 					continue
 				# ------------------------------------------------- open-air pieces
-				if s == "^" or s == "v":
+				if s == "^" or s == "v" or s == "G":
+					if s == "G":
+						var gr := place(grate_scene, pos, 0, devices)
+						gr.name = "CeilingGrate"
 					var item := "void_light" if s == "v" else "void"
 					if s == "v" and in_rects(pzones, c, r) >= 0:
 						item = "void_light_off"
@@ -649,7 +672,7 @@ func _init() -> void:
 					var rmask := 0
 					for i in 4:
 						var d: Vector2i = MDIRS[i]
-						if is_air(f, c + d.x, r + d.y) and ch(f, c + d.x, r + d.y) != "Q" and not no_rail.has("%d,%d,%d,%d" % [c, f, r, i]):
+						if is_air(f, c + d.x, r + d.y) and not "QG".contains(ch(f, c + d.x, r + d.y)) and not no_rail.has("%d,%d,%d,%d" % [c, f, r, i]):
 							rmask |= 1 << i
 					if rmask != 0:
 						var rc := canonical(rmask, 0)
@@ -718,6 +741,8 @@ func _init() -> void:
 						can.rotation.y = roll(c, r, 7) * TAU
 					"h", "a", "E":
 						place(scenes[s], pos)
+					"q":
+						place(keycard_scene, pos).name = "Keycard"
 					"@":
 						player_pos = pos
 					"e":

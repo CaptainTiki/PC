@@ -79,6 +79,11 @@
    "id": 15,
    "name": "console_desk",
    "note": "Console desk along X, screens face +Z"
+  },
+  {
+   "id": 16,
+   "name": "ledge",
+   "note": "Shelf ledge 2 m up along the +Z edge (climb to a ceiling grate)"
   }
  ],
  "structure": [

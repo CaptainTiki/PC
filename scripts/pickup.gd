@@ -2,8 +2,10 @@ class_name Pickup
 extends Area3D
 ## Health or energy cells. Only taken when it would actually help.
 
-@export_enum("health", "cells") var kind := "health"
+@export_enum("health", "cells", "keycard") var kind := "health"
 @export var amount := 25
+## keycard only: which doors it opens (Door.key_id)
+@export var key_id := "crew"
 
 @onready var mesh: Node3D = $Mesh
 var t := 0.0
@@ -21,7 +23,10 @@ func _on_body(b: Node) -> void:
 	var p := b as Player
 	if p == null or p.dead:
 		return
-	if kind == "health":
+	if kind == "keycard":
+		p.add_key(key_id)
+		p.hud.toast("%s KEYCARD" % key_id.to_upper(), Color(1, 0.85, 0.3))
+	elif kind == "health":
 		if p.health >= p.max_health:
 			return
 		p.heal(amount)

@@ -743,6 +743,14 @@ func build_rails_cover() -> void:
 		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
 			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
 	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -0.35), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
+	# ledge: a grated shelf along the +Z edge, 2 m up, to stand on under a ceiling grate
+	st = new_st()
+	box(st, Vector3(-1, 1.88, 0.05), Vector3(1, 2.0, 1.0), "beam", "floor_grate", "beam")
+	for lx in [-0.9, 0.9]:
+		box(st, Vector3(lx - 0.05, 0, 0.1), Vector3(lx + 0.05, 1.88, 0.2), "beam", "beam")
+		box(st, Vector3(lx - 0.04, 1.4, 0.2), Vector3(lx + 0.04, 1.48, 1.0), "beam", "beam")
+	box(st, Vector3(-1, 2.0, 0.05), Vector3(1, 2.06, 0.11), "hazard", "hazard")
+	add_item(lib_props, "ledge", finish(st), shape_box(Vector3(-1, 1.88, 0.05), Vector3(1, 2.0, 1.0)), "Shelf ledge 2 m up along the +Z edge (climb to a ceiling grate)")
 
 func build_device_meshes() -> void:
 	# ladder: rails + rungs, 5m tall, in the XY plane at z = 0

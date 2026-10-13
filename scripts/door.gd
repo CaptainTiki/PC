@@ -12,6 +12,8 @@ const LOCKS := {
 	"inside": ["Locked from the inside", Color(1.0, 0.15, 0.1), 0.9],
 	"lockdown": ["Lockdown", Color(0.95, 0.25, 0.9), 1.0],
 	"seal": ["Pressure seal", Color(0.65, 0.85, 1.0), 0.9],
+	"oneway": ["Opens from the other side", Color(0.35, 0.9, 1.0), 0.25],
+	"keycard": ["Keycard required", Color(1.0, 0.82, 0.25), 0.9],
 }
 
 @export var slab_mesh: Mesh
@@ -22,11 +24,16 @@ const LOCKS := {
 @export var open_distance := 4.5
 @export var speed := 1.4
 ## why the door won't open ("none" = it opens when you walk up)
-@export_enum("none", "power", "jammed", "inside", "lockdown", "seal") var lock := "none":
+@export_enum("none", "power", "jammed", "inside", "lockdown", "seal", "oneway", "keycard") var lock := "none":
 	set(v):
 		lock = v
 		if is_node_ready():
 			_update_lamp()
+## oneway: the side (door-local Z sign, +1 or -1) the door opens from; once opened
+## from that side it stays unlocked (a shortcut back)
+@export var open_side := 1
+## keycard: which card opens it (Pickup.key_id)
+@export var key_id := "crew"
 ## compatibility: true = locked for lack of power
 var locked: bool:
 	get:
@@ -73,14 +80,29 @@ func can_use() -> bool:
 	return false
 
 func prompt() -> String:
+	if lock == "keycard":
+		return "%s keycard required" % key_id.capitalize()
 	return LOCKS.get(lock, LOCKS["none"])[0]
+
+func _unlock_self() -> void:
+	lock = "none"
+	var level := owner as Level
+	if level:
+		level.doors_changed()
 
 func _physics_process(delta: float) -> void:
 	_t += delta
 	if player == null:
 		player = get_tree().get_first_node_in_group("player") as Node3D
 	var target := 0.0
-	if lock == "none" and player and player.global_position.distance_to(global_position) < open_distance:
+	var near: bool = player != null and player.global_position.distance_to(global_position) < open_distance
+	if near and lock == "oneway" and signf(to_local(player.global_position).z) == float(open_side):
+		_unlock_self()
+	elif near and lock == "keycard" and player.has_method("has_key") and player.has_key(key_id):
+		_unlock_self()
+		if player.get("hud"):
+			player.hud.toast("%s KEYCARD ACCEPTED" % key_id.to_upper(), Color(1, 0.85, 0.3))
+	if lock == "none" and near:
 		target = 1.0
 	open_amount = move_toward(open_amount, target, delta * speed)
 	body.position = open_offset * smoothstep(0.0, 1.0, open_amount)

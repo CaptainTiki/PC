@@ -49,6 +49,11 @@ Doors and switches: `[locks] lock c r f jammed|inside|lockdown|seal` locks a doo
 halves of a double door); `r` (door release, on the nearest wall) and `y` (lockdown
 console) are switches, wired with `[links] link c r f to c r f ...`. Locks live in
 `Level.door_locks`, so re-baking keeps them; locked doors are walls to the flow field.
+`lock c r f oneway n|e|s|w` opens only from that side (then stays open as a shortcut);
+`lock c r f keycard [id]` opens once you carry that keycard (`q` places a crew keycard).
+Climbing: `u` is a climb cell under a ceiling grate `G` on the floor above (crate, a
+ledge 2 m up on the wall, a short ladder through the grate). `G` alone is a hatch with
+a shootable grate you can drop through.
 Door states: open = cyan lamp, no power = dark, jammed = amber + sparks, locked from the
 inside = red, lockdown = magenta pulse, pressure seal = white. Look at a locked door to
 see why it's shut.
@@ -70,13 +75,17 @@ lit), `closet` (shelves, mop).
   the now-unlocked door -> lower hall -> ladder or elevator to the mezzanine ->
   maintenance shaft -> exit. 20 anomalies; bot clears it in ~70s.
 
+- `levels/chain_test` — mini chain (pass 2): command room behind glass with a one-way
+  door and the seal release; reached by climbing a storeroom crate and ledge through a
+  ceiling grate, crossing maintenance above and dropping through a grate. Keycard door
+  past the seal.
 - `levels/kit03_test` — door and detour test map (pass 1 of deck03): jammed corridor with
   the duct/riser/ladder detour through maintenance, a security post locked from the
   inside reached by a duct from the rec room, a lockdown shutter, a pressure seal, and
   template cabins/closet.
 
 ## Gameplay (vertical slice core)
-- Controls: WASD move, mouse look, LMB fire, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
+- Controls: WASD move, mouse look, LMB fire, Space jump, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
 - Use: look at a usable thing (anything with `interact()` / `prompt()`) within 2.6m; the HUD shows `[E] prompt`.
 - Ladders: push forward to climb, back to descend (or forward while looking down).
 - `Player` (scenes/actors/player.tscn) — reads `PlayerInput` intent only; damage via `take_hit()`.
@@ -98,6 +107,7 @@ lit), `closet` (shelves, mop).
 - `-- --vmcheck`  fire once and capture the viewmodel frames
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --chaincheck` scripted run of the mini chain in chain_test: one-way door, seal, crate jump + ledge ladder through a grate, shaft, grate drop, release, keycard
 - `-- --doorcheck` scripted checks in kit03_test: every door state, the switches, and the duct -> riser -> ladder -> maintenance -> closet detour
 - `-- --mechcheck` scripted checks in deck02: explosive chain, vent cover + crouch through the duct, ladder, elevator call/ride, breaker
 - `-- --flashcheck` every shot marker with the flashlight off and on

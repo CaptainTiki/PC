@@ -66,6 +66,8 @@ func _ready() -> void:
 		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
+	elif "--chaincheck" in args:
+		add_child(preload("res://scripts/chain_check.gd").new())
 	elif "--doorcheck" in args:
 		add_child(preload("res://scripts/door_check.gd").new())
 	elif "--mechcheck" in args:
@@ -134,6 +136,11 @@ func door_at(cell: Vector3i) -> Door:
 				if n is Door:
 					_doors[grid.local_to_map((n as Door).position)] = n
 	return _doors.get(cell)
+
+## A door changed state on its own (one-way opened, keycard used): refresh navigation.
+func doors_changed() -> void:
+	_walk.clear()
+	_flows.clear()
 
 ## Switch callback: unlock the doors on these cells (whatever their lock reason).
 func unlock(cells: Array) -> void:
@@ -206,7 +213,15 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			else:
 				door.slab_mesh = load("res://kit/door_slab.res")
 			door.transform = Transform3D(basis, origin)
-			door.lock = door_locks.get(cell, "none")
+			var lk: String = door_locks.get(cell, "none")
+			var parts := lk.split(":")
+			door.lock = parts[0]
+			if parts[0] == "oneway" and parts.size() > 1:
+				# "oneway:n" = opens from the north side; turn that into the door's local side
+				var wd: Vector3 = {"n": Vector3(0, 0, -1), "s": Vector3(0, 0, 1), "e": Vector3(1, 0, 0), "w": Vector3(-1, 0, 0)}.get(parts[1], Vector3.BACK)
+				door.open_side = 1 if (basis.inverse() * wd).z > 0.0 else -1
+			elif parts[0] == "keycard" and parts.size() > 1:
+				door.key_id = parts[1]
 			var dz := _power_zone(cell)
 			if dz >= 0:
 				if door.lock == "none":

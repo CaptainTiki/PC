@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var toast_label: Label = $Toast
 @onready var banner: Label = $Banner
 @onready var prompt_label: Label = $Prompt
+@onready var keys_label: Label = $Keys
 
 func set_health(h: float, _max_h: float) -> void:
 	health_label.text = str(int(ceil(h)))
@@ -39,3 +40,7 @@ func set_prompt(text: String, usable := true) -> void:
 		prompt_label.text = ""
 	else:
 		prompt_label.text = ("[E]  " + text) if usable else text
+
+## keycards held, shown bottom centre
+func set_keys(ids: Array) -> void:
+	keys_label.text = "   ".join(ids.map(func(k): return "[%s KEY]" % str(k).to_upper()))

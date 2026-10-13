@@ -10,6 +10,8 @@ signal died
 @export var crouch_speed := 3.5
 @export var climb_speed := 4.5
 @export var use_range := 2.6
+## enough to get onto a 1.2 m crate, not onto a wall
+@export var jump_height := 1.35
 
 const STAND_H := 1.8
 const CROUCH_H := 1.0
@@ -26,6 +28,7 @@ const MASK_USE := 1 | 16
 @onready var body_shape: CollisionShape3D = $Shape
 
 var crouching := false
+var keys := {}                # keycards picked up (Door.key_id -> true)
 var ladder: Node3D            # set by Ladder areas while inside
 var shake := 0.0
 var _look_target: Object
@@ -72,6 +75,8 @@ func _physics_process(delta: float) -> void:
 		velocity.z *= 0.5
 	elif not is_on_floor():
 		velocity.y -= 20.0 * delta
+	if intent.consume_jump() and is_on_floor() and not crouching and not _on_ladder():
+		velocity.y = sqrt(2.0 * 20.0 * jump_height)
 	move_and_slide()
 	if shake > 0.0:
 		shake = maxf(shake - delta * 2.5, 0.0)
@@ -143,6 +148,13 @@ func _update_crouch(delta: float) -> void:
 		cap.height = CROUCH_H if crouching else STAND_H
 		body_shape.position.y = cap.height * 0.5
 	head.position.y = move_toward(head.position.y, EYE_CROUCH if crouching else EYE_STAND, delta * 6.0)
+
+func add_key(id: String) -> void:
+	keys[id] = true
+	hud.set_keys(keys.keys())
+
+func has_key(id: String) -> bool:
+	return keys.has(id)
 
 func add_shake(amount: float) -> void:
 	shake = maxf(shake, amount)
