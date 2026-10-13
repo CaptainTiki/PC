@@ -56,7 +56,8 @@ same with a crate to jump up from, and `i` a crawl duct whose floor is 1.8 m up,
 mouth is a vent at ledge height (shoot the cover, crouch in).
 Climbing: `u` is a climb cell under a ceiling grate `G` on the floor above (crate, a
 ledge 2 m up on the wall, a short ladder through the grate). `G` alone is a hatch with
-a shootable grate you can drop through.
+a shootable grate you can drop through. `~` is open air with no railing (a collapsed
+floor you fall through).
 Door states: open = cyan lamp, no power = dark, jammed = amber + sparks, locked from the
 inside = red, lockdown = magenta pulse, pressure seal = white. Look at a locked door to
 see why it's shut.
@@ -78,6 +79,15 @@ lit), `closet` (shelves, mop).
   the now-unlocked door -> lower hall -> ladder or elevator to the mezzanine ->
   maintenance shaft -> exit. 20 anomalies; bot clears it in ~70s.
 
+- `levels/deck03` — Habitation ring greybox (three floors, ~70 enemies). Corridor A ->
+  command room seen through glass (seal release inside) reached via storeroom A
+  (crate -> ledge -> high vent -> hidden riser ladder) and the west maintenance deck
+  -> junction (Transit needs the crew keycard) -> Corridor C / commons -> gym locker
+  hatch down to the F0 pump/power rooms (breaker) -> storeroom B ladder up and a crawl
+  over Corridor B into the room above the security post -> drop in for the keycard and
+  the lockdown console -> stairs to the gallery -> Corridor D's collapsed floor drops
+  you into Corridor C past the cave-in -> transit lift. Generated from the scratchpad
+  `deck03.py`; `--deckcheck` walks all three chains.
 - `levels/chain_test` — mini chain (pass 2): command room behind glass with a one-way
   door and the seal release; reached from the storeroom (crate -> ledge -> high vent ->
   crouch duct -> hidden riser ladder), across maintenance above, then down through a
@@ -111,6 +121,7 @@ lit), `closet` (shelves, mop).
 - `-- --vmcheck`  fire once and capture the viewmodel frames
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --deckcheck` scripted walk of deck03's three chains with teleports between steps (28 checks, shots/deck_*.png)
 - `-- --chaincheck` scripted run of the mini chain in chain_test: one-way door, seal, crate jump + ledge ladder through a grate, shaft, grate drop, release, keycard
 - `-- --doorcheck` scripted checks in kit03_test: every door state, the switches, and the duct -> riser -> ladder -> maintenance -> closet detour
 - `-- --mechcheck` scripted checks in deck02: explosive chain, vent cover + crouch through the duct, ladder, elevator call/ride, breaker

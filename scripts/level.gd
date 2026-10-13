@@ -66,6 +66,8 @@ func _ready() -> void:
 		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
+	elif "--deckcheck" in args:
+		add_child(preload("res://scripts/deck03_check.gd").new())
 	elif "--chaincheck" in args:
 		add_child(preload("res://scripts/chain_check.gd").new())
 	elif "--doorcheck" in args:

@@ -19,6 +19,7 @@ extends SceneTree
 ##           g  interior glass window (room on both sides)
 ##   floors  .  deck   ,  tread plate   =  glowing grate   _  yellow edge line   * ceiling light
 ##   air     ^  open air (no floor; double-height / stairwell / hatch)   v  open air + ceiling light
+##           ~  open air with no railings round it: a collapsed floor you're meant to drop through
 ##           c  catwalk (grating deck, railings added automatically next to open air)
 ##   levels  /  stair cell (declared in [stairs])     l  ladder (climbs the adjacent wall; the
 ##           cell above must be '^', the landing is the cell above that wall)
@@ -75,8 +76,8 @@ const FLOORS := {
 }
 ## things that can stand on a catwalk: with 2+ catwalk neighbours the cell is catwalk
 const ON_CATWALK := "@eshaExXb"
-const OPEN_ONLY := "/^vcQG"     # open (not walls) but not plain floors
-const AIR_ABOVE := "^vcQG"      # cells that leave the floor below without a ceiling
+const OPEN_ONLY := "/^vcQG~"     # open (not walls) but not plain floors
+const AIR_ABOVE := "^vcQG~"      # cells that leave the floor below without a ceiling
 const OPEN_VARIANT := {"floor": "floor_open", "floor_metal": "floor_metal_open", "floor_grate": "floor_grate_open",
 	"floor_line": "floor_line_open", "floor_light": "floor_open", "floor_light_off": "floor_open"}
 # DIRS[i] in map space (x = col, y = row); matches build_kit.gd DIRS (+Z, +X, -Z, -X)
@@ -127,7 +128,7 @@ func opens(f: int, c: int, r: int) -> bool:
 ## no floor here: open air
 func is_air(f: int, c: int, r: int) -> bool:
 	var s := ch(f, c, r)
-	return s == "^" or s == "v" or s == "G" or (s == "Q" and ch(f - 1, c, r) == "Q")
+	return s == "^" or s == "v" or s == "G" or s == "~" or (s == "Q" and ch(f - 1, c, r) == "Q")
 
 func open_above(f: int, c: int, r: int) -> bool:
 	return AIR_ABOVE.contains(ch(f + 1, c, r))
@@ -461,6 +462,7 @@ func _init() -> void:
 	var enemy_cells: Array[Vector3i] = []
 	var skitter_cells: Array[Vector3i] = []
 	var breakers := 0
+	var last_breaker: Breaker = null
 
 	# ladders first: their wall cells skip ceiling trim, their landings skip a railing
 	for f in floors.size():
@@ -588,7 +590,7 @@ func _init() -> void:
 					grid.set_cell_item(cell, sid[prefix + TUBES[tc[1]]], orient_k((4 - int(tc[3])) % 4, grid))
 					continue
 				# ------------------------------------------------- open-air pieces
-				if s == "^" or s == "v" or s == "G":
+				if s == "^" or s == "v" or s == "G" or s == "~":
 					if s == "G":
 						var gr := place(grate_scene, pos, 0, devices)
 						gr.name = "CeilingGrate"
@@ -678,7 +680,7 @@ func _init() -> void:
 					var rmask := 0
 					for i in 4:
 						var d: Vector2i = MDIRS[i]
-						if is_air(f, c + d.x, r + d.y) and not "QG".contains(ch(f, c + d.x, r + d.y)) and not no_rail.has("%d,%d,%d,%d" % [c, f, r, i]):
+						if is_air(f, c + d.x, r + d.y) and not "QG~".contains(ch(f, c + d.x, r + d.y)) and not no_rail.has("%d,%d,%d,%d" % [c, f, r, i]):
 							rmask |= 1 << i
 					if rmask != 0:
 						var rc := canonical(rmask, 0)
@@ -744,6 +746,7 @@ func _init() -> void:
 						var bk := place(breaker_scene, pos + Vector3(d.x, 0, d.y) * 0.95, (maxi(wi, 0) + 2) % 4, devices) as Breaker
 						bk.name = "Breaker"
 						bk.zone = breakers
+						last_breaker = bk
 						if breakers >= pzones.size():
 							push_warning("breaker %d at %d,%d has no [power] zone" % [breakers, c, r])
 						breakers += 1
@@ -814,6 +817,8 @@ func _init() -> void:
 	for sc in skitter_cells:
 		place(skitter, grid.map_to_local(sc) + Vector3(0, 0.05, 0), 0, enemies)
 
+	if breakers == 1 and pzones.size() > 1:
+		last_breaker.zone = -1          # one breaker, several zones: it powers them all
 	for sc in links:
 		if not switches.has(sc):
 			push_warning("[links] %s has no switch ('r' or 'y') on the map" % sc)

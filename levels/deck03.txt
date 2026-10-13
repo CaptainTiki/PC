@@ -1,0 +1,148 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                         #########
+                                         #,,#,,e,#
+                                  #######R,s,,*,,R
+                                  #p,,e,h#*,,,,,k#
+                                  #,o,so,#s,#ae,,#
+                                  P,,*,,,,,,R#####
+                                  #,s,,s,,,,#
+                                  #,os,o,#*,#
+                                  #b,,b,p#,l#
+                                  ###V####,,#
+                                         ####
+[floor 1]
+
+
+                                           ###K###
+                                           #h...a#
+                                           #.....#
+                                           #..*..#          ######
+                                           #.....#          #...e#
+                             #################D##############.*..#
+                             #,*,XXs*,,,,,*,,,,,*,e,,,*,,,s*,....L
+                             #,,,XX,e,,,,,,,,s,,,,,,,,,,,s,,,..E.#
+                             #,,#############################s...#
+                             #,,#.nn..#                     #..a.#
+                             #*,D..*..#                     ######
+                             #,,#.s.bb#    ##K###
+      ###K###                #,e#######    #s*.s#
+      #j.r.j#                #,,# #.h.#    #jq.j#
+      #.s.s.#                #*,# #a..#    #..y.#
+      #j.*.j#                #,,####D#R###R#gggD#
+      #.s.s.#                #,,##..............#                  #####
+ ####L#gggD#####L#############DD##..s...e..x....######R#############X,s#
+ #.@..*.....*.....*.....*...D.*....h.*...*..s......*...s.*e....*s..D,*,#
+ #..........................D.....................s..b......s......#,,,#
+ #######V########D###V############....nnnn...###############R#######a,l#
+              #,X,aw#ii#h# #X....R..X........#/##                  #####
+              #x,*,w#  #l# #..*..#.........s.#/#R
+              #,,,,w#  ### #.s...D...*...*...#/##
+              #zwwww#      #..nn.#.s...s.....#D##
+              #######      #.a...#..........b...#
+                           #########R#D#R###R####
+                                   #s...s#x*.#
+                                   #.o.o.D...#
+                                   #..*..#.^.#
+                                   #h....#####
+                                   #######
+[floor 2]
+
+
+
+
+
+
+
+                                   ####
+                               #####~~#
+                               O,a,#~~#
+            #####              Oe,,D,,#
+            #a,,#             ######,,#
+            #,h,#             #,x,,#s,#    #########
+            #,,*#             #*,,,D*,#    #*,s,h,,#
+      ########D####           #,sh,#,,#    #,,,s,s,#
+      #x,,,W,*,,,,#           ######,s#    #,G,,,,,#
+      #,,G,#,,,,se#                #,,#    #########
+      #,,,,D,,oo,,P              ###,,##!######## m
+      #,*,a#s,,,,,#              #cccccccccceccc# m                #####
+      ######,s,,,*#              #ceccccccccccec# m                #,*,#
+           ####D###              #cc^^^^^^^^^^cc# m                #,,,#
+             #e,,#     #####     #cc^^v^^^^v^^cc# mmmmmmmmmmmmmmmmm#,s,#
+             #,*p#     #,,,#     !cc^^^^^^^^^^cc!                  #,,^#
+             #,,,#mmmmm#,,*#     #cc^^^^v^^^^^^c#                  #a,,#
+             #b,b#     #^,,#     #cc^^v^^^^v^^^c#                  #####
+             #####     #,as#     #cc^^^^^^^^^^cc#
+                       #####     #ceccccccccccca#
+                                 #hccccceccccccc#
+                                 ###!###!###!####
+[rooms]
+room cabin 4 19 s 1
+room cabin 14 19 s 1
+room cabin 20 19 s 1
+room cabin 5 22 n 1
+room cabin 11 22 n 1
+room cabin 29 12 e 1
+room cabin 29 16 e 1
+room cabin 40 7 s 1
+room cabin 52 7 s 1
+room cabin 56 10 n 1
+room cabin 51 19 s 1
+room cabin 56 19 s 1
+room cabin 61 19 s 1
+room cabin 53 22 n 1
+room cabin 58 22 n 1
+room cabin 63 22 n 1
+room cabin 38 11 w 2
+room cabin 38 15 w 2
+[locks]
+lock 10 19 1 oneway n
+lock 28 20 1 seal
+lock 30 19 1 keycard crew
+lock 47 17 1 oneway n
+lock 46 26 1 lockdown
+[links]
+link 9 15 1 to 28 20 1
+link 46 16 1 to 46 26 1
+[power]
+zone 34 12 49 27
+zone 48 18 71 23
+[stairs]
+stair 46 25 n 1
+[shots]
+shot a_start 3 21 -90 0 1
+shot b_command_glass 8 20 0 6 1
+shot c_seal 26 21 -90 2 1
+shot d_storeroom 17 23 180 4 1
+shot e_fanroom 12 17 -90 -4 2
+shot f_drop 8 16 -90 -45 2
+shot g_junction 30 21 0 2 1
+shot h_commons 34 20 -90 -2 1
+shot i_security 46 19 0 4 1
+shot j_power 45 25 -90 0 0
+shot k_corridor_b 50 21 -90 0 1
+shot l_gallery 35 19 -135 -10 2
+shot m_corridor_d 36 16 0 -2 2
+shot n_hole 36 11 0 -40 2
+shot o_transit 56 9 -90 0 1
