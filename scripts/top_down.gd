@@ -1,6 +1,7 @@
 extends Node
 ## Dev tooling (`-- --topdown`): orthographic camera high on +Y looking straight
 ## down (-Y), framed to the level's grid bounds, rendered off-screen at high res.
+## Lit by art/env/map_view.tres only: every Light3D in the level is switched off.
 ## Output: shots/<scene>_topdown.png  (north / row 0 at the top)
 
 const PX_PER_M := 16
@@ -16,9 +17,9 @@ func _ready() -> void:
 		mn = Vector3(minf(mn.x, p.x - 1), 0, minf(mn.z, p.z - 1))
 		mx = Vector3(maxf(mx.x, p.x + 1), 0, maxf(mx.z, p.z + 1))
 	var size := mx - mn
-	# lights fade with distance from the camera in normal play; the plan camera is 40m up
-	for l in level.find_children("*", "OmniLight3D", true, false):
-		(l as OmniLight3D).distance_fade_enabled = false
+	# map view: no dynamic lights at all, flat ambient only (art/env/map_view.tres)
+	for l in level.find_children("*", "Light3D", true, false):
+		(l as Light3D).visible = false
 	var hud := get_tree().get_first_node_in_group("player").get_node_or_null("Hud") as CanvasLayer
 	if hud:
 		hud.visible = false
@@ -34,12 +35,7 @@ func _ready() -> void:
 	cam.far = 100.0
 	cam.position = Vector3((mn.x + mx.x) * 0.5, 40.0, (mn.z + mx.z) * 0.5)
 	cam.rotation_degrees = Vector3(-90, 0, 0)       # looking straight down -Y, -Z (north) up
-	# same look as the level, minus fog (40m of fog would wash the plan out)
-	var we := level.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	if we:
-		var env := we.environment.duplicate() as Environment
-		env.fog_enabled = false
-		cam.environment = env
+	cam.environment = load("res://art/env/map_view.tres")
 	vp.add_child(cam)
 	cam.make_current()
 	for i in 8:
