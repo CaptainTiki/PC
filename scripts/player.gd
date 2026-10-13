@@ -13,6 +13,7 @@ signal died
 @onready var camera: Camera3D = $Head/Camera
 @onready var weapon: Weapon = $Head/Camera/Weapon
 @onready var hud: Hud = $Hud
+@onready var flashlight: SpotLight3D = $Head/Camera/Flashlight
 
 var health := 100.0
 var dead := false
@@ -32,6 +33,8 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector3.ZERO, accel * delta)
 		move_and_slide()
 		return
+	if intent.consume_flashlight():
+		toggle_flashlight()
 	var l := intent.consume_look()
 	rotate_y(l.x)
 	head.rotation.x = clampf(head.rotation.x + l.y, -1.4, 1.4)
@@ -63,6 +66,9 @@ func take_hit(amount: float, _point: Vector3, dir: Vector3, _source: Node) -> vo
 		t.tween_property(head, "position:y", 0.35, 0.6).set_trans(Tween.TRANS_QUAD)
 		t.tween_interval(1.4)
 		t.tween_callback(get_tree().reload_current_scene)
+
+func toggle_flashlight() -> void:
+	flashlight.visible = not flashlight.visible
 
 func heal(amount: float) -> void:
 	health = minf(health + amount, max_health)

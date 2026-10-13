@@ -35,7 +35,7 @@ script = ExtResource("1_mn18i")
 [node name="Grid" type="GridMap" parent="."]
 mesh_library = ExtResource("2_y7m48")
 cell_size = Vector3(2, 4, 2)
-cell_octant_size = 4
+cell_octant_size = 2
 cell_center_y = false
 data = {
 "cells": PackedInt32Array(0, 0, 0, 1, 0, 5, 2, 0, 5, 3, 0, 23, 4, 0, 5, 5, 0, 5, 6, 0, 5, 7, 0, 23, 8, 0, 5, 9, 0, 5, 10, 0, 5, 11, 0, 23, 12, 0, 5, 13, 0, 5, 14, 0, 1441792, 0, 1, 1048581, 1, 1, 24, 2, 1, 24, 3, 1, 24, 4, 1, 24, 5, 1, 24, 6, 1, 24, 7, 1, 24, 8, 1, 24, 9, 1, 24, 10, 1, 24, 11, 1, 24, 12, 1, 24, 13, 1, 24, 14, 1, 1441797, 0, 2, 1048594, 1, 2, 24, 2, 2, 28, 3, 2, 24, 4, 2, 24, 5, 2, 24, 6, 2, 28, 7, 2, 24, 8, 2, 24, 9, 2, 24, 10, 2, 28, 11, 2, 24, 12, 2, 24, 13, 2, 24, 14, 2, 1441810, 0, 3, 1048581, 1, 3, 24, 2, 3, 24, 3, 3, 24, 4, 3, 24, 5, 3, 24, 6, 3, 24, 7, 3, 24, 8, 3, 24, 9, 3, 24, 10, 3, 24, 11, 3, 24, 12, 3, 24, 13, 3, 24, 14, 3, 1441797, 0, 4, 1048590, 1, 4, 24, 2, 4, 24, 3, 4, 24, 4, 4, 24, 5, 4, 24, 6, 4, 24, 7, 4, 24, 8, 4, 24, 9, 4, 24, 10, 4, 24, 11, 4, 24, 12, 4, 24, 13, 4, 24, 14, 4, 1441806, 0, 5, 1048581, 1, 5, 24, 2, 5, 24, 3, 5, 24, 4, 5, 24, 5, 5, 24, 6, 5, 24, 7, 5, 24, 8, 5, 24, 9, 5, 24, 10, 5, 24, 11, 5, 24, 12, 5, 24, 13, 5, 24, 14, 5, 1441797, 0, 6, 1048581, 1, 6, 24, 2, 6, 28, 3, 6, 24, 4, 6, 24, 5, 6, 24, 6, 6, 28, 7, 6, 24, 8, 6, 24, 9, 6, 24, 10, 6, 28, 11, 6, 24, 12, 6, 24, 13, 6, 24, 14, 6, 1441797, 0, 7, 1048581, 1, 7, 24, 2, 7, 24, 3, 7, 24, 4, 7, 24, 5, 7, 24, 6, 7, 24, 7, 7, 24, 8, 7, 24, 9, 7, 24, 10, 7, 24, 11, 7, 24, 12, 7, 24, 13, 7, 24, 14, 7, 1441797, 0, 8, 1048576, 1, 8, 655365, 2, 8, 655365, 3, 8, 655365, 4, 8, 655365, 5, 8, 655367, 6, 8, 30, 7, 8, 655390, 8, 8, 655366, 9, 8, 655365, 10, 8, 655365, 11, 8, 655365, 12, 8, 655365, 13, 8, 655365, 14, 8, 655360, 5, 9, 1048581, 6, 9, 25, 7, 9, 25, 8, 9, 1441797, 5, 10, 1048594, 6, 10, 25, 7, 10, 25, 8, 10, 1441810, 5, 11, 1048581, 6, 11, 28, 7, 11, 28, 8, 11, 1441797, 5, 12, 1048581, 6, 12, 25, 7, 12, 24, 8, 12, 1441797, 5, 13, 1048576, 6, 13, 655365, 7, 13, 655365, 8, 13, 655360)
@@ -43,7 +43,7 @@ data = {
 
 [node name="Trim" type="GridMap" parent="."]
 mesh_library = ExtResource("3_nasxo")
-cell_octant_size = 4
+cell_octant_size = 2
 cell_center_y = false
 data = {
 "cells": PackedInt32Array(0, 0, 0, 65536, 0, 28, 1, 0, 5, 65537, 0, 33, 2, 0, 5, 65538, 0, 33, 3, 0, 5, 65539, 0, 33, 4, 0, 5, 65540, 0, 33, 5, 0, 5, 65541, 0, 33, 6, 0, 5, 65542, 0, 33, 7, 0, 5, 65543, 0, 33, 8, 0, 5, 65544, 0, 33, 9, 0, 5, 65545, 0, 33, 10, 0, 5, 65546, 0, 33, 11, 0, 5, 65547, 0, 33, 12, 0, 5, 65548, 0, 33, 13, 0, 5, 65549, 0, 33, 14, 0, 1441792, 65550, 0, 1441820, 0, 1, 1048581, 65536, 1, 1048609, 14, 1, 1441797, 65550, 1, 1441825, 0, 2, 1048581, 65536, 2, 1048609, 14, 2, 1441797, 65550, 2, 1441825, 0, 3, 1048581, 65536, 3, 1048609, 14, 3, 1441797, 65550, 3, 1441825, 0, 4, 1048581, 65536, 4, 1048609, 14, 4, 1441797, 65550, 4, 1441825, 0, 5, 1048581, 65536, 5, 1048609, 14, 5, 1441797, 65550, 5, 1441825, 0, 6, 1048581, 65536, 6, 1048609, 14, 6, 1441797, 65550, 6, 1441825, 0, 7, 1048581, 65536, 7, 1048609, 14, 7, 1441797, 65550, 7, 1441825, 0, 8, 1048576, 65536, 8, 1048604, 1, 8, 655365, 65537, 8, 655393, 2, 8, 655365, 65538, 8, 655393, 3, 8, 655365, 65539, 8, 655393, 4, 8, 655365, 65540, 8, 655393, 5, 8, 655367, 65541, 8, 655395, 8, 8, 655366, 65544, 8, 655394, 9, 8, 655365, 65545, 8, 655393, 10, 8, 655365, 65546, 8, 655393, 11, 8, 655365, 65547, 8, 655393, 12, 8, 655365, 65548, 8, 655393, 13, 8, 655365, 65549, 8, 655393, 14, 8, 655360, 65550, 8, 655388, 5, 9, 1048581, 65541, 9, 1048609, 8, 9, 1441797, 65544, 9, 1441825, 5, 10, 1048581, 65541, 10, 1048609, 8, 10, 1441797, 65544, 10, 1441825, 5, 11, 1048581, 65541, 11, 1048609, 8, 11, 1441797, 65544, 11, 1441825, 5, 12, 1048581, 65541, 12, 1048609, 8, 12, 1441797, 65544, 12, 1441825, 5, 13, 1048576, 65541, 13, 1048604, 6, 13, 655365, 65542, 13, 655393, 7, 13, 655365, 65543, 13, 655393, 8, 13, 655360, 65544, 13, 655388)
@@ -52,7 +52,7 @@ data = {
 [node name="Props" type="GridMap" parent="."]
 mesh_library = ExtResource("4_trc5n")
 cell_size = Vector3(2, 4, 2)
-cell_octant_size = 4
+cell_octant_size = 2
 cell_center_y = false
 data = {
 "cells": PackedInt32Array(1, 4, 6, 2, 4, 6, 3, 4, 6, 4, 4, 6, 5, 4, 6, 6, 4, 6, 7, 4, 6, 8, 4, 6, 9, 4, 6, 10, 4, 6, 11, 4, 6, 12, 4, 6, 13, 4, 6)
@@ -109,6 +109,8 @@ data = ExtResource("9_xa0s5")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 1.55)
 light_color = Color(0.45, 0.6, 1, 1)
 light_energy = 0.7
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 4.5
 omni_attenuation = 1.4
 
@@ -116,6 +118,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2, 1.55)
 light_color = Color(0.45, 0.6, 1, 1)
 light_energy = 0.7
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 4.5
 omni_attenuation = 1.4
 
@@ -123,6 +127,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 2, 1.55)
 light_color = Color(0.45, 0.6, 1, 1)
 light_energy = 0.7
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 4.5
 omni_attenuation = 1.4
 
@@ -130,6 +136,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.85, 2.9, 5)
 light_color = Color(0.35, 0.88, 1, 1)
 light_energy = 0.9
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 5.5
 omni_attenuation = 1.4
 
@@ -137,7 +145,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3.6, 5)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -145,7 +154,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 5)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -153,7 +163,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.6, 5)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -161,6 +172,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.15, 2.9, 5)
 light_color = Color(0.35, 0.88, 1, 1)
 light_energy = 0.9
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 5.5
 omni_attenuation = 1.4
 
@@ -168,7 +181,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -176,7 +190,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -184,7 +199,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.6, 13)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -208,6 +224,8 @@ slab_center_x = 0.125
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.85, 2.9, 21)
 light_color = Color(0.35, 0.88, 1, 1)
 light_energy = 0.9
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 5.5
 omni_attenuation = 1.4
 
@@ -215,6 +233,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.15, 2.9, 21)
 light_color = Color(0.35, 0.88, 1, 1)
 light_energy = 0.9
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 5.5
 omni_attenuation = 1.4
 
@@ -222,7 +242,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.6, 23)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 
@@ -230,7 +251,8 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 3.6, 23)
 light_color = Color(1, 0.9, 0.76, 1)
 light_energy = 2.6
-shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
 omni_range = 9.0
 omni_attenuation = 1.4
 

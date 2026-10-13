@@ -40,7 +40,7 @@ lights, patchy trim) and `[shots]` screenshot markers.
   23 anomalies; bot clears it in ~55s at 80 hull.
 
 ## Gameplay (vertical slice core)
-- Controls: WASD move, mouse look, LMB fire, Esc release mouse.
+- Controls: WASD move, mouse look, LMB fire, F flashlight, Esc release mouse.
 - `Player` (scenes/actors/player.tscn) — reads `PlayerInput` intent only; damage via `take_hit()`.
 - `Weapon` + `WeaponData` (data/scattergun.tres) — hitscan pellets, tracers, impact FX.
 - `Enemy` + `EnemyData` — flat billboard sprites (art/sprites); `take_hit()` chokepoint.
