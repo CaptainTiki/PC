@@ -712,7 +712,7 @@ func build_upper() -> void:
 	var gm := finish(st)
 	gst.commit(gm)
 	gm.surface_set_material(1, load("res://kit/glass_material.tres"))
-	add_item(lib_structure, "wall_glass", gm, shape_box(Vector3(-1, 0, -zf), Vector3(1, 4, zf)), "Interior window wall between two rooms (needs open space on +Z and -Z)")
+	add_item(lib_structure, "wall_glass", gm, wall_collision(5, 0), "Interior window wall between two rooms (needs open space on +Z and -Z)")
 
 func rail_edge(st: SurfaceTool, i: int) -> void:
 	var d: Vector3 = DIRS[i]
@@ -755,7 +755,7 @@ func build_rails_cover() -> void:
 			Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
 		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
 			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
-	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -0.35), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
+	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -1.0), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
 	# ledges: grated walkway 2 m up along the wall edges of a cell (edge masks like rails),
 	# reaching back to the wall face so there's no gap
 	var lnames := {1: "ledge", 3: "ledge_corner", 5: "ledge_both", 7: "ledge_u", 15: "ledge_ring"}

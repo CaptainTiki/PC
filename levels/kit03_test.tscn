@@ -216,7 +216,7 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 57.2
 script = ExtResource("15_njlqq")
 
 [node name="LockdownConsole" type="StaticBody3D" parent="Devices" instance=ExtResource("18_bgjmu")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 47, 4, 27)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 47, 4, 27.7)
 collision_layer = 17
 script = ExtResource("17_f1jrf")
 targets = Array[Vector3i]([Vector3i(36, 1, 8), Vector3i(36, 1, 9)])
@@ -318,6 +318,7 @@ omni_attenuation = 1.4
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 73, 4, 11)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Light_floor_light7" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 79, 7.6, 13)
@@ -332,31 +333,37 @@ omni_attenuation = 1.4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door3" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door4" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door5" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door6" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 49, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door7" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 4, 15)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 lock = "seal"
 
 [node name="Light_floor_light8" type="OmniLight3D" parent="Baked"]
@@ -462,27 +469,32 @@ lock = "lockdown"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 4, 21)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door13" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 4, 21)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door14" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 4, 21)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Door15" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 4, 21)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 lock = "inside"
 
 [node name="Door16" type="Node3D" parent="Baked" instance=ExtResource("24_7jqq7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 4, 21)
 script = ExtResource("25_7pudh")
 slab_mesh = ExtResource("26_k0ejm")
+open_offset = Vector3(1.6, 0, 0)
 
 [node name="Light_floor_light15" type="OmniLight3D" parent="Baked"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 79, 7.6, 21)

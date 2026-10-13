@@ -121,6 +121,7 @@ lit), `closet` (shelves, mop).
 - `-- --vmcheck`  fire once and capture the viewmodel frames
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --peek c f r yaw pitch [open] ...` drop the player at grid cells (flashlight on, enemies gone) and capture shots/peek_<n>.png; `open` opens every door for that shot
 - `-- --deckcheck` scripted walk of deck03's three chains with teleports between steps (28 checks, shots/deck_*.png)
 - `-- --chaincheck` scripted run of the mini chain in chain_test: one-way door, seal, crate jump + ledge ladder through a grate, shaft, grate drop, release, keycard
 - `-- --doorcheck` scripted checks in kit03_test: every door state, the switches, and the duct -> riser -> ladder -> maintenance -> closet detour

@@ -510,6 +510,9 @@ func _init() -> void:
 				if s == "g":
 					var ns := opens(f, c, r - 1) and opens(f, c, r + 1)
 					grid.set_cell_item(cell, sid["wall_glass"], 0 if ns else orient_k(1, grid))
+					# glass is a wall open both ways: gutter below, chamfer above, on both sides
+					trim.set_cell_item(Vector3i(c, 2 * f, r), tid["gutter_auto_5_0"], 0 if ns else orient_k(1, trim))
+					trim.set_cell_item(Vector3i(c, 2 * f + 1, r), tid["chamfer_auto_5_0"], 0 if ns else orient_k(1, trim))
 					continue
 				if is_wall(s):
 					var sig := wall_signature(f, c, r)
@@ -758,7 +761,9 @@ func _init() -> void:
 						switches[cell] = sw
 					"y":
 						var wi := wall_dir(f, c, r)
-						var sw := place(console_scene, pos, (wi + 2) % 4 if wi >= 0 else 0, devices) as Switch
+						var dy: Vector2i = MDIRS[wi] if wi >= 0 else Vector2i.ZERO
+						# back against the wall so there's no pocket to get shoved into behind it
+						var sw := place(console_scene, pos + Vector3(dy.x, 0, dy.y) * 0.7, (wi + 2) % 4 if wi >= 0 else 0, devices) as Switch
 						sw.name = "LockdownConsole"
 						switches[cell] = sw
 					"x", "X":

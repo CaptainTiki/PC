@@ -145,6 +145,7 @@ func _lockdown() -> void:
 	var a := level.door_at(Vector3i(36, 1, 8))
 	var b := level.door_at(Vector3i(36, 1, 9))
 	_put(23, 1, 12, 180, -25)
+	p.global_position.z += 0.7   # console sits back against the wall
 	await _wait(0.4)
 	await _cap("console")
 	var pr := _prompt()

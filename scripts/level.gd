@@ -66,6 +66,8 @@ func _ready() -> void:
 		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
+	elif "--peek" in args:
+		add_child(preload("res://scripts/peek.gd").new())
 	elif "--deckcheck" in args:
 		add_child(preload("res://scripts/deck03_check.gd").new())
 	elif "--chaincheck" in args:
@@ -213,7 +215,17 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 				door.slab_width = 1.75
 				door.slab_center_x = 0.125
 			else:
+				# single slab slides sideways into a neighbouring wall cell (never up: the
+				# slab would poke through the floor above)
 				door.slab_mesh = load("res://kit/door_slab.res")
+				var along := Vector3i(basis.x.round())
+				var side := 1
+				for sgn in [1, -1]:
+					var nname := _name_at(cell + along * sgn)
+					if nname.begins_with("wall") and nname != "wall_glass":
+						side = sgn
+						break
+				door.open_offset = Vector3(1.6 * side, 0, 0)
 			door.transform = Transform3D(basis, origin)
 			var lk: String = door_locks.get(cell, "none")
 			var parts := lk.split(":")

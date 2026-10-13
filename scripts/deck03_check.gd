@@ -197,7 +197,7 @@ func _chain2() -> void:
 	_put(45, 1, 15, 0, 0)
 	await _wait(0.6)
 	_check("keycard picked up", p.has_key("crew"))
-	_put(46, 1, 15, 180, -25)
+	_put(46, 1, 15, 180, -25, Vector3(0, 0, 0.7))
 	await _wait(0.4)
 	pr = _prompt()
 	await _use()
