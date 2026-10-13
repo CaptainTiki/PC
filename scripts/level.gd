@@ -23,7 +23,19 @@ const LIGHTS := {
 	# trim grid, ceiling slot (cell origin is 2m up)
 	"chamfer_light": [Vector3(0, 1.3, 1.1), Color(0.55, 0.9, 1.0), 2.4, 8.5, false],
 	"chamfer_light_broken": [Vector3(0, 1.3, 1.1), Color(0.55, 0.9, 1.0), 1.2, 6.0, false],
+	# unpowered pieces bake their light switched off (see power_zones / power_on)
+	"floor_light_off": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 2.6, 9.0, false],
+	"chamfer_light_off": [Vector3(0, 1.3, 1.1), Color(0.55, 0.9, 1.0), 2.4, 8.5, false],
+	"void_light": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 3.4, 12.5, false],
+	"void_light_off": [Vector3(0, 3.6, 0), Color(1.0, 0.9, 0.76), 3.4, 12.5, false],
+	"wall_light_off": [Vector3(0, 2.9, 0.85), Color(0.35, 0.88, 1.0), 0.9, 5.5, false],
+	"shaft": [Vector3(0, 2.4, 0), Color(0.4, 0.85, 1.0), 0.8, 4.5, false],   # every other cell
 }
+## pieces that keep running on emergency power inside an unpowered zone
+const EMERGENCY := ["wall_lamp"]
+## lit piece -> unpowered twin (power_on swaps them back)
+const POWER_SWAP := {"floor_light_off": "floor_light", "chamfer_light_off": "chamfer_light",
+	"void_light_off": "void_light", "wall_light_off": "wall_light"}
 const FLICKER := ["chamfer_light_broken"]
 const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 
@@ -32,6 +44,9 @@ const DOOR_SCENE := preload("res://scenes/props/door.tscn")
 ## `damage_light_scale` and some of them flicker.
 @export var damaged_zones: Array[Rect2i] = []
 @export var damage_light_scale := 0.45
+## Unpowered areas (grid cells, all floors). Their lights bake switched off and
+## their doors locked until a Breaker calls power_on(index).
+@export var power_zones: Array[Rect2i] = []
 
 @onready var grid: GridMap = $Grid
 var meta: Dictionary
@@ -48,6 +63,8 @@ func _ready() -> void:
 		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
+	elif "--mechcheck" in args:
+		add_child(preload("res://scripts/mech_check.gd").new())
 	elif "--vmcheck" in args:
 		add_child(preload("res://scripts/vm_check.gd").new())
 
@@ -67,6 +84,38 @@ func bake() -> void:
 	for g in [get_node_or_null("Grid"), get_node_or_null("Trim"), get_node_or_null("Props")]:
 		if g:
 			_bake_cells(g, baked, root)
+
+func _power_zone(cell: Vector3i) -> int:
+	for i in power_zones.size():
+		if power_zones[i].has_point(Vector2i(cell.x, cell.z)):
+			return i
+	return -1
+
+## Breaker callback: lights on, ceiling pieces swapped to their lit versions, doors unlocked.
+func power_on(zone: int) -> void:
+	if zone < 0 or zone >= power_zones.size():
+		return
+	for g in [get_node_or_null("Grid"), get_node_or_null("Trim")]:
+		if g == null:
+			continue
+		var gm := g as GridMap
+		var ids := {}
+		for id in gm.mesh_library.get_item_list():
+			ids[gm.mesh_library.get_item_name(id)] = id
+		for cell in gm.get_used_cells():
+			if not power_zones[zone].has_point(Vector2i(cell.x, cell.z)):
+				continue
+			var nm := gm.mesh_library.get_item_name(gm.get_cell_item(cell))
+			if POWER_SWAP.has(nm):
+				gm.set_cell_item(cell, ids[POWER_SWAP[nm]], gm.get_cell_item_orientation(cell))
+	for n in get_tree().get_nodes_in_group("power_%d" % zone):
+		if n is Door:
+			(n as Door).locked = false
+		elif n is Light3D:
+			(n as Light3D).visible = true
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_node("Hud"):
+		p.get_node("Hud").toast("POWER RESTORED", Color(0.5, 0.95, 1.0))
 
 func _own(parent: Node, n: Node, root: Node) -> void:
 	parent.add_child(n, true)
@@ -91,6 +140,8 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 		var basis := g.get_basis_with_orthogonal_index(g.get_cell_item_orientation(cell))
 		var origin := g.map_to_local(cell)
 		if LIGHTS.has(nm):
+			if nm == "shaft" and (cell.x + cell.z) % 2 != 0:
+				continue
 			var d: Array = LIGHTS[nm]
 			var l := OmniLight3D.new()
 			l.name = "Light_" + nm
@@ -112,6 +163,10 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			if nm in FLICKER or (hurt and ((cell.x * 7 + cell.z * 13) % 3 == 0)):
 				l.set_script(FlickerLight)
 				l.base_energy = l.light_energy
+			var pz := _power_zone(cell)
+			if pz >= 0 and not nm in EMERGENCY:
+				l.visible = false
+				l.add_to_group("power_%d" % pz, true)
 			_own(parent, l, root)
 		elif nm == "door" or nm == "door_half":
 			var door: Door = DOOR_SCENE.instantiate()
@@ -124,60 +179,112 @@ func _bake_cells(g: GridMap, parent: Node, root: Node) -> void:
 			else:
 				door.slab_mesh = load("res://kit/door_slab.res")
 			door.transform = Transform3D(basis, origin)
+			var dz := _power_zone(cell)
+			if dz >= 0:
+				door.locked = true
+				door.add_to_group("power_%d" % dz, true)
 			_own(parent, door, root)
 
 # ------------------------------------------------------------ navigation ----
-## Grid flow field: BFS over walkable structure cells (floors + doors), cached per
-## goal cell. Enemies and the playtest bot use it to get round walls and through doors.
-var _walk := {}
-var _flows := {}
+## Grid flow field: BFS over walkable structure cells (floors, doors, stairs,
+## shafts, catwalks) across all floors, cached per goal cell. Stairs link a floor
+## to the landing in front of their top on the floor above. Enemies and the
+## playtest bot use it to get round walls, through doors and up/down stairs.
+const WALKABLE := ["floor", "door", "stair", "shaft", "wall_shaft", "catwalk"]
 const NDIRS := [Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1), Vector3i(0, 0, -1)]
+var _walk := {}
+var _stairs := {}     # cell -> [segment, ascent dir]
+var _flows := {}
+var _ladders := {}    # bottom cell <-> landing cell (only for climbers, i.e. the bot)
+
+func _build_walk() -> void:
+	for cell in grid.get_used_cells():
+		var nm := grid.mesh_library.get_item_name(grid.get_cell_item(cell))
+		for w in WALKABLE:
+			if nm.begins_with(w):
+				_walk[cell] = true
+				break
+		if nm.begins_with("stair_"):
+			var asc := grid.get_basis_with_orthogonal_index(grid.get_cell_item_orientation(cell)) * Vector3(0, 0, -1)
+			_stairs[cell] = [int(nm.substr(6)), Vector3i(roundi(asc.x), 0, roundi(asc.z))]
+	for l in find_children("*", "Ladder", true, false):
+		var lad := l as Node3D
+		var z := lad.global_transform.basis.z
+		var bottom := cell_of(lad.global_position + z)
+		var landing := cell_of(lad.global_position - z + Vector3(0, float(lad.get("height")), 0))
+		_ladders[bottom] = landing
+		_ladders[landing] = bottom
 
 func is_walkable(c: Vector3i) -> bool:
 	if _walk.is_empty():
-		for cell in grid.get_used_cells():
-			var nm := grid.mesh_library.get_item_name(grid.get_cell_item(cell))
-			if nm.begins_with("floor") or nm.begins_with("door"):
-				_walk[Vector3i(cell.x, 0, cell.z)] = true
-	return _walk.has(Vector3i(c.x, 0, c.z))
+		_build_walk()
+	return _walk.has(c)
+
+func _links(c: Vector3i, climb := false) -> Array[Vector3i]:
+	var out: Array[Vector3i] = []
+	if climb and _ladders.has(c):
+		out.append(_ladders[c])
+	if _stairs.has(c):
+		var k: int = _stairs[c][0]
+		var d: Vector3i = _stairs[c][1]
+		out.append(c - d)
+		out.append(c + d + (Vector3i(0, 1, 0) if k == 2 else Vector3i.ZERO))
+	else:
+		for d in NDIRS:
+			var n: Vector3i = c + d
+			if _stairs.has(n):
+				if _stairs[n][0] == 0 and _stairs[n][1] == d:
+					out.append(n)          # step onto the bottom of a flight
+				continue
+			out.append(n)
+			var below: Vector3i = n - Vector3i(0, 1, 0)
+			if _stairs.has(below) and _stairs[below][0] == 2 and _stairs[below][1] == -d:
+				out.append(below)          # landing -> top of a flight
+	return out.filter(func(n: Vector3i) -> bool: return is_walkable(n))
+
+func cell_of(p: Vector3) -> Vector3i:
+	return grid.local_to_map(grid.to_local(p + Vector3(0, 0.3, 0)))
 
 func _nearest_walkable(c: Vector3i) -> Vector3i:
 	if is_walkable(c):
 		return c
-	for d in NDIRS:
-		if is_walkable(c + d):
-			return c + d
+	var down := c - Vector3i(0, 1, 0)
+	if is_walkable(down):
+		return down
+	for base in [c, down]:
+		for d in NDIRS:
+			if is_walkable(base + d):
+				return base + d
 	return c
 
-func distance_field(goal: Vector3i) -> Dictionary:
-	goal = _nearest_walkable(Vector3i(goal.x, 0, goal.z))
-	if _flows.has(goal):
-		return _flows[goal]
+func distance_field(goal: Vector3i, climb := false) -> Dictionary:
+	goal = _nearest_walkable(goal)
+	var key := [goal, climb]
+	if _flows.has(key):
+		return _flows[key]
 	var dist := {goal: 0}
 	var queue: Array[Vector3i] = [goal]
 	var i := 0
 	while i < queue.size():
 		var c: Vector3i = queue[i]
 		i += 1
-		for d in NDIRS:
-			var n: Vector3i = c + d
-			if not dist.has(n) and is_walkable(n):
+		for n in _links(c, climb):
+			if not dist.has(n):
 				dist[n] = dist[c] + 1
 				queue.append(n)
 	if _flows.size() > 8:
 		_flows.clear()
-	_flows[goal] = dist
+	_flows[key] = dist
 	return dist
 
 ## Unit direction (XZ) from `from` toward the next cell on the way to `to`.
-func flow_dir(from: Vector3, to: Vector3) -> Vector3:
-	var field := distance_field(grid.local_to_map(grid.to_local(to)))
-	var c := grid.local_to_map(grid.to_local(from))
-	c = Vector3i(c.x, 0, c.z)
+## climb: also use ladders (the playtest bot; enemies don't climb).
+func flow_dir(from: Vector3, to: Vector3, climb := false) -> Vector3:
+	var field := distance_field(cell_of(to), climb)
+	var c := _nearest_walkable(cell_of(from))
 	var best := c
 	var best_d: int = field.get(c, 1 << 30)
-	for d in NDIRS:
-		var n: Vector3i = c + d
+	for n in _links(c, climb):
 		if field.has(n) and field[n] < best_d:
 			best_d = field[n]
 			best = n
@@ -196,6 +303,10 @@ func _capture() -> void:
 	var out_dir := ProjectSettings.globalize_path("res://shots")
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var scene_name := scene_file_path.get_file().get_basename()
+	if "--power" in OS.get_cmdline_user_args():   # capture with every zone powered
+		for i in power_zones.size():
+			power_on(i)
+		scene_name += "_pw"
 	for m in get_tree().get_nodes_in_group("shots"):
 		cam.global_transform = (m as Node3D).global_transform
 		for i in 6:

@@ -9,6 +9,8 @@ var move := Vector2.ZERO       # x = strafe, y = forward(-)/back(+)
 var look := Vector2.ZERO       # radians this frame (yaw, pitch)
 var fire := false
 var flashlight := false   # true for one frame when toggled
+var use := false          # true for one frame when pressed
+var crouch := false       # held
 
 func _unhandled_input(e: InputEvent) -> void:
 	if bot:
@@ -28,6 +30,9 @@ func _process(_d: float) -> void:
 	fire = Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	if Input.is_action_just_pressed("flashlight"):
 		flashlight = true
+	if Input.is_action_just_pressed("use"):
+		use = true
+	crouch = Input.is_action_pressed("crouch")
 
 func consume_look() -> Vector2:
 	var l := look
@@ -38,3 +43,8 @@ func consume_flashlight() -> bool:
 	var f := flashlight
 	flashlight = false
 	return f
+
+func consume_use() -> bool:
+	var u := use
+	use = false
+	return u

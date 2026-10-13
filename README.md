@@ -5,9 +5,9 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 ## Grid kit: three GridMaps on one grid
 | Grid | Cell | Library | Holds |
 |---|---|---|---|
-| `Grid` (structure) | 2x4x2 | kit/structure.meshlib.res | wall faces, floors, doors |
-| `Trim` | 2x2x2 | kit/trim.meshlib.res | slot y=0: floor trim (gutter, gutter_glow) · slot y=1: ceiling trim (chamfer, chamfer_light, chamfer_light_broken) |
-| `Props` | 2x4x2 | kit/props.meshlib.res | runs that tile: tray (end/straight/corner/T/cross), pipes_vertical, beam, beam_cross, pillar |
+| `Grid` (structure) | 2x4x2 | kit/structure.meshlib.res | wall faces, floors (+ `_open` no-ceiling variants), void / catwalk, stairs, doors, glass wall, crawl ducts + octagon shafts (auto-joining, with wall mouths) |
+| `Trim` | 2x2x2 | kit/trim.meshlib.res | floor slot y=2f: gutter, gutter_glow, band_floor · ceiling slot y=2f+1: chamfer, chamfer_light(_broken/_off), band_ceil |
+| `Props` | 2x4x2 | kit/props.meshlib.res | runs that tile: tray, pipes_vertical, beam, beam_cross, pillar · railings (edge masks) · cover · console_desk |
 
 - Every piece lives strictly inside its cell.
 - Wall faces sit 0.75m back from the room-side cell edge (local z = +0.25). The trim
@@ -19,34 +19,54 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
 - Rooms are separated by at least one wall cell; wall cells with no open neighbour stay empty.
 - Crates and other one-off clutter are free-placed scenes (scenes/props/).
 - Lights and doors become real nodes via the Level "Bake" button.
+- Multi-floor: floor f sits at cell y=f in Grid/Props (4m apart) and y=2f / 2f+1 in Trim.
+- Devices are free-placed scenes (scenes/props/): ladder, elevator (+ call_post),
+  breaker, explosive (canister), vent_cover. `*_off` pieces are the unpowered twins
+  that `Level.power_on()` swaps back to lit.
 
 ## Pipeline
     tools/rebuild_and_shoot.sh [level]   # textures -> kit -> level -> screenshots
 - `tools/gen_textures.py`  procedural seamless 64px tile atlas + emission atlas
-- `tools/build_kit.gd`     builds `kit/kit.meshlib.res` (20 pieces)
+- `tools/build_kit.gd`     builds the three mesh libraries + device meshes
 - `tools/build_level.gd`   ASCII map (`levels/*.txt`) -> GridMap scene
 - Capture: run a level with `-- --capture` to render every Marker3D in group `shots`.
 
 ## ASCII legend
-See the header of `tools/build_level.gd`. Walls `#` plain, `!` lit chamfer, `?` broken
-light, `%` glowing gutter, features `C H W U L V K R P O`; floors `. , = _ *`;
-props `o - + t p`; clutter `x X`; `D` door, `@` start, `e` Drifter, `s` Skitter,
-`h` health, `a` cells, `E` exit. After the map: `[damage]` zones (dim/flickering
-lights, patchy trim) and `[shots]` screenshot markers.
+Full legend in the header of `tools/build_level.gd`. Walls `#` plain, `!` lit chamfer,
+`?` broken light, `%` glowing gutter, features `C H W U L V K R P O`, `g` glass;
+floors `. , = _ *`; air `^` (no floor), `v` (air + ceiling light), `c` catwalk;
+`/` stairs, `l` ladder, `Q` elevator; tubes `d` duct (crouch), `m` shaft;
+props `o - + t p n j`; clutter `x X b`; `D` door, `k` breaker, `@` start,
+`e` Drifter, `s` Skitter, `h` health, `a` cells, `E` exit.
+
+Floor 0 is the map at the top; `[floor 1]`, `[floor 2]`… follow. Sections:
+`[stairs] stair c r n|e|s|w [floor]`, `[power] zone c0 r0 c1 r1` (breakers power
+zones in reading order), `[damage] zone …`, `[shots] shot name c r yaw pitch [floor]`.
+Railings, ceiling removal under open air, duct/shaft mouths, vent covers and
+elevator call buttons are all placed automatically.
 
 ## Levels
 - `levels/wing01` — Collider control wing (main scene). Arrival bay -> control room ->
   cargo bay -> damaged corridor -> pipe gallery -> airlock -> breach chamber (exit).
-  23 anomalies; bot clears it in ~55s at 80 hull.
+  23 anomalies; bot clears it in ~50s.
+- `levels/deck02` — kit showcase / level 2 draft (two floors). Start room -> corridor
+  (or the crawl duct) -> unpowered double-height atrium with catwalks and stairs ->
+  control room with a glass wall over the atrium and the breaker -> back down through
+  the now-unlocked door -> lower hall -> ladder or elevator to the mezzanine ->
+  maintenance shaft -> exit. 20 anomalies; bot clears it in ~70s.
 
 ## Gameplay (vertical slice core)
-- Controls: WASD move, mouse look, LMB fire, F flashlight, Esc release mouse.
+- Controls: WASD move, mouse look, LMB fire, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
+- Use: look at a usable thing (anything with `interact()` / `prompt()`) within 2.6m; the HUD shows `[E] prompt`.
+- Ladders: push forward to climb, back to descend (or forward while looking down).
 - `Player` (scenes/actors/player.tscn) — reads `PlayerInput` intent only; damage via `take_hit()`.
 - `Weapon` + `WeaponData` (data/scattergun.tres) — hitscan pellets, tracers, impact FX.
 - `Enemy` + `EnemyData` — flat billboard sprites (art/sprites); `take_hit()` chokepoint.
   - Drifter (data/drifter.tres): flies, keeps range, fires slow orbs.
   - Skitter (data/skitter.tres): ground pack melee, lunges, alerts nearby allies.
-  - Out of sight, enemies follow the Level's grid flow field (round corners, through doors).
+  - Out of sight, enemies follow the Level's grid flow field (round corners, through
+    doors, up and down stairs; they don't use ladders, ducts or elevators). Fliers
+    hover above whatever floor is under them.
 - Pickups: health +25, cells +15 (scenes/props/pickup_*.tscn). Exit: scenes/props/exit.tscn.
 - Level map chars: `@` player start, `e` Drifter spawn.
 - Lights/doors are baked into the scene (Level inspector button "Bake"),
@@ -56,6 +76,8 @@ lights, patchy trim) and `[shots]` screenshot markers.
 - `-- --capture`  screenshot every Marker3D in group "shots"
 - `-- --playtest` bot plays the level (walk in, aim, fire), captures key moments to shots/play_*.png + play_log.txt
 - `-- --vmcheck`  fire once and capture the viewmodel frames
-- `-- --topdown`  orthographic plan of the level from straight above -> shots/<level>_topdown.png
+- `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
+- `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --mechcheck` scripted checks in deck02: explosive chain, vent cover + crouch through the duct, ladder, elevator call/ride, breaker
 - `-- --flashcheck` every shot marker with the flashlight off and on
 - `python3 tools/gen_sprites.py` regenerates enemy sprite sheets

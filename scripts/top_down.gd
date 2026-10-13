@@ -2,7 +2,9 @@ extends Node
 ## Dev tooling (`-- --topdown`): orthographic camera high on +Y looking straight
 ## down (-Y), framed to the level's grid bounds, rendered off-screen at high res.
 ## Lit by art/env/map_view.tres only: every Light3D in the level is switched off.
-## Output: shots/<scene>_topdown.png  (north / row 0 at the top)
+## Output: shots/<scene>_topdown.png  (north / row 0 at the top); multi-floor
+## levels get one image per floor (<scene>_topdown_f<N>.png), each cut just under
+## that floor's ceiling so the floors above don't hide it.
 
 const PX_PER_M := 16
 
@@ -33,17 +35,24 @@ func _ready() -> void:
 	cam.size = size.z
 	cam.near = 0.05
 	cam.far = 100.0
-	cam.position = Vector3((mn.x + mx.x) * 0.5, 40.0, (mn.z + mx.z) * 0.5)
 	cam.rotation_degrees = Vector3(-90, 0, 0)       # looking straight down -Y, -Z (north) up
 	cam.environment = load("res://art/env/map_view.tres")
 	vp.add_child(cam)
 	cam.make_current()
-	for i in 8:
-		await get_tree().process_frame
-	await RenderingServer.frame_post_draw
-	var img := vp.get_texture().get_image()
-	img.convert(Image.FORMAT_RGB8)
-	var path := ProjectSettings.globalize_path("res://shots/%s_topdown.png" % level.scene_file_path.get_file().get_basename())
-	img.save_png(path)
-	print("top-down saved ", path, " ", vp.size)
+	var top := 0
+	for c in grid.get_used_cells():
+		top = maxi(top, c.y)
+	var base := level.scene_file_path.get_file().get_basename()
+	for f in top + 1:
+		# just under this floor's ceiling: everything above is behind the camera
+		cam.position = Vector3((mn.x + mx.x) * 0.5, 40.0 if top == 0 else f * 4.0 + 3.9, (mn.z + mx.z) * 0.5)
+		for i in 8:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		var img := vp.get_texture().get_image()
+		img.convert(Image.FORMAT_RGB8)
+		var name := "%s_topdown.png" % base if top == 0 else "%s_topdown_f%d.png" % [base, f]
+		var path := ProjectSettings.globalize_path("res://shots/" + name)
+		img.save_png(path)
+		print("top-down saved ", path, " ", vp.size)
 	get_tree().quit()

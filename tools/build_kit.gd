@@ -201,21 +201,21 @@ func ceiling_face(st: SurfaceTool, tile := "ceiling") -> void:
 	quad(st, Vector3(-1, 4, -1), Vector3(1, 4, -1), Vector3(1, 4, 1), Vector3(-1, 4, 1), Vector3.DOWN,
 		tile, Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
 
-func ceiling_with_panel(st: SurfaceTool, hx: float, hz: float, depth: float) -> void:
+func ceiling_with_panel(st: SurfaceTool, hx: float, hz: float, depth: float, panel_tile := "light_strip") -> void:
 	# ceiling with a recessed glowing panel in the middle
-	var rects := [[-1, 1, -1, -hz], [-1, 1, hz, 1], [-1, -hx, -hz, hz], [hx, 1, -hz, hz]]
+	var rects := [[-1, 1, -1, 1]]
 	for r in rects:
 		var x0: float = r[0]; var x1: float = r[1]; var z0: float = r[2]; var z1: float = r[3]
 		quad(st, Vector3(x0, 4, z0), Vector3(x1, 4, z0), Vector3(x1, 4, z1), Vector3(x0, 4, z1), Vector3.DOWN,
 			"ceiling", Vector2((x0 + 1) / 2, (z0 + 1) / 2), Vector2((x1 + 1) / 2, (z0 + 1) / 2),
 			Vector2((x1 + 1) / 2, (z1 + 1) / 2), Vector2((x0 + 1) / 2, (z1 + 1) / 2))
-	var y := 4.0 + depth
-	# glowing panel: sample the lit band of the light_strip tile
+	# the fitting hangs below the ceiling (a recess would poke through the floor above)
+	var y := 4.0 - depth
 	quad(st, Vector3(-hx, y, -hz), Vector3(hx, y, -hz), Vector3(hx, y, hz), Vector3(-hx, y, hz), Vector3.DOWN,
-		"light_strip", Vector2(0, 0.40), Vector2(1, 0.40), Vector2(1, 0.60), Vector2(0, 0.60))
+		panel_tile, Vector2(0, 0.40), Vector2(1, 0.40), Vector2(1, 0.60), Vector2(0, 0.60))
 	var dv := depth / 2.0
-	for e in [[Vector3(-hx, 4, -hz), Vector3(hx, 4, -hz), Vector3.BACK], [Vector3(hx, 4, hz), Vector3(-hx, 4, hz), Vector3.FORWARD],
-			[Vector3(-hx, 4, hz), Vector3(-hx, 4, -hz), Vector3.RIGHT], [Vector3(hx, 4, -hz), Vector3(hx, 4, hz), Vector3.LEFT]]:
+	for e in [[Vector3(-hx, y, -hz), Vector3(hx, y, -hz), Vector3.FORWARD], [Vector3(hx, y, hz), Vector3(-hx, y, hz), Vector3.BACK],
+			[Vector3(-hx, y, hz), Vector3(-hx, y, -hz), Vector3.LEFT], [Vector3(hx, y, -hz), Vector3(hx, y, hz), Vector3.RIGHT]]:
 		var a: Vector3 = e[0]; var b: Vector3 = e[1]
 		quad(st, a, b, b + Vector3.UP * depth, a + Vector3.UP * depth, e[2],
 			"trim", Vector2(0, 0), Vector2(1, 0), Vector2(1, dv), Vector2(0, dv))
@@ -392,7 +392,7 @@ func build_walls() -> void:
 	# --- structure: wall faces + flat floor/ceiling bands (a hard, untrimmed edge) ---
 	for c in sigs:
 		var st := new_st()
-		wall_mesh(st, c[0], c[1], SEG_FLOOR_BAND + SEG_CEIL_BAND, "plain")
+		wall_mesh(st, c[0], c[1], [], "plain")
 		add_item(lib_structure, sig_name("wall", c), finish(st), wall_collision(c[0], c[1]), "Wall face, open sides %d, inside corners %d" % [c[0], c[1]])
 	var feats := [
 		["wall_bulkhead", "Ribbed bulkhead face", func(st): side_auto(st, FACE_F, -1, 1, 0, 4, 0, "wall_concrete", "wall_concrete")],
@@ -400,6 +400,7 @@ func build_walls() -> void:
 		["wall_cables", "Cable run, upper face", func(st): side_auto(st, FACE_F, -1, 1, 0, 4, 0, "wall_lower", "wall_cables")],
 		["wall_rust", "Rusted upper face", func(st): side_auto(st, FACE_F, -1, 1, 0, 4, 0, "wall_lower", "rust_plate")],
 		["wall_light", "Recessed cyan light strip (bakes an OmniLight)", func(st): recess(st, FACE_F, -0.875, 0.875, 2.625, 3.125, 0.125, "wall_lower", "wall_upper", "light_strip", "trim", 0.0, 1.0, 0.36, 0.64)],
+		["wall_light_off", "Wall light strip with no power (see Level power zones)", func(st): recess(st, FACE_F, -0.875, 0.875, 2.625, 3.125, 0.125, "wall_lower", "wall_upper", "kick", "trim", 0.0, 1.0, 0.1, 0.3)],
 		["wall_vent", "Recessed floor-level vent", func(st): recess(st, FACE_F, -0.625, 0.625, 0.375, 1.5, 0.25, "wall_lower", "wall_upper", "vent", "trim")],
 		["wall_console", "Recessed console screen (bakes dim light)", func(st): recess(st, FACE_F, -0.75, 0.75, 1.0, 2.5, 0.25, "wall_lower", "wall_upper", "console", "trim")],
 		["wall_lamp", "Red warning lamp (bakes red OmniLight)", func(st): recess(st, FACE_F, -0.375, 0.375, 2.375, 3.125, 0.125, "wall_lower", "wall_upper", "warning_lamp", "trim")],
@@ -408,11 +409,13 @@ func build_walls() -> void:
 	]
 	for f in feats:
 		var st := new_st()
-		wall_mesh(st, 1, 0, SEG_FLOOR_BAND + SEG_CEIL_BAND, f[2])
+		wall_mesh(st, 1, 0, [], f[2])
 		add_item(lib_structure, f[0], finish(st), wall_collision(1, 0), f[1])
 
 	# --- trim grid (cells 2m tall): slot y=0 floor trim, slot y=1 ceiling trim ---
-	for fam in [["gutter", SEG_GUTTER, 0.0, "Floor trim: dark grating gutter + kick"],
+	for fam in [["band_floor", SEG_FLOOR_BAND, 0.0, "Floor trim: plain flat floor strip (hard 90 degree edge)"],
+			["band_ceil", SEG_CEIL_BAND, -2.0, "Ceiling trim (y=1 slot): plain flat ceiling strip (hard edge)"],
+			["gutter", SEG_GUTTER, 0.0, "Floor trim: dark grating gutter + kick"],
 			["gutter_glow", SEG_GUTTER_GLOW, 0.0, "Floor trim: gutter with glowing slots"],
 			["chamfer", SEG_CHAMFER, -2.0, "Ceiling trim (paint in the y=1 slot): plain chamfer"]]:
 		for c in sigs:
@@ -420,15 +423,18 @@ func build_walls() -> void:
 			wall_mesh(st, c[0], c[1], fam[1], null, fam[2])
 			add_item(lib_trim, sig_name(fam[0], c), finish(st), [], fam[3])
 	# lit / broken chamfers: straight only, light bar sits on the chamfer
-	for spec in [["chamfer_light", true, "Ceiling trim: chamfer with light bar (bakes an OmniLight)"],
-			["chamfer_light_broken", false, "Ceiling trim: chamfer with a failing light bar (bakes a flickering light)"]]:
+	for spec in [["chamfer_light", 1, "Ceiling trim: chamfer with light bar (bakes an OmniLight)"],
+			["chamfer_light_broken", 0, "Ceiling trim: chamfer with a failing light bar (bakes a flickering light)"],
+			["chamfer_light_off", 2, "Ceiling trim: light bar with no power (see Level power zones)"]]:
 		var st := new_st()
 		wall_mesh(st, 1, 0, SEG_CHAMFER, null, -2.0)
 		light_bar(st, spec[1], -2.0)
 		add_item(lib_trim, spec[0], finish(st), [], spec[2])
 
 ## Light bar on the +Z chamfer: housing + emissive face, 1.5m long.
-func light_bar(st: SurfaceTool, lit: bool, y_off: float) -> void:
+func light_bar(st: SurfaceTool, mode: int, y_off: float) -> void:
+	# mode 1 = lit, 0 = broken (one glowing segment), 2 = unpowered (dark)
+	var lit := mode == 1
 	var sd = SIDE_F
 	var n: Vector3 = (sd.n + Vector3.DOWN).normalized()
 	var up := Vector3(0, y_off, 0)
@@ -453,7 +459,7 @@ func light_bar(st: SurfaceTool, lit: bool, y_off: float) -> void:
 			var q1: Vector3 = on.call(e[1].x, e[1].y, base)
 			var mid: Vector3 = (p0 + p1) * 0.5 - on.call(0.0, (a + b) * 0.5, lift)
 			poly(st, [q0, q1, p1, p0], mid.normalized(), "trim", [Vector2(0, 0), Vector2(0.3, 0), Vector2(0.3, 0.03), Vector2(0, 0.03)])
-	if not lit:
+	if mode == 0:
 		# one short segment still glowing
 		var hw2 := 0.12
 		poly(st, [on.call(0.3 - hw2, d0 + 0.05, 0.052), on.call(0.3 + hw2, d0 + 0.05, 0.052), on.call(0.3 + hw2, d1 - 0.05, 0.052), on.call(0.3 - hw2, d1 - 0.05, 0.052)],
@@ -494,7 +500,295 @@ func shape_box(mn: Vector3, mx: Vector3) -> Array:
 	return [b, Transform3D(Basis(), (mn + mx) * 0.5)]
 
 func floor_shapes() -> Array:
-	return shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, 4, -1), Vector3(1, 4.5, 1))
+	return shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1))
+
+func finish_empty(st: SurfaceTool) -> ArrayMesh:
+	# an item with no geometry still needs a (degenerate) mesh in a MeshLibrary
+	st.set_normal(Vector3.UP)
+	st.set_uv(Vector2.ZERO)
+	st.add_vertex(Vector3.ZERO); st.add_vertex(Vector3.ZERO); st.add_vertex(Vector3.ZERO)
+	return finish(st)
+
+func stair_mesh(st: SurfaceTool, k: int) -> void:
+	var h := 4.0 / 3.0
+	var n := 6
+	for i in n:
+		var z0 := 1.0 - float(i) * 2.0 / n
+		var z1 := 1.0 - float(i + 1) * 2.0 / n
+		var yb := k * h + float(i) * h / n
+		var yt := k * h + float(i + 1) * h / n
+		# tread
+		quad(st, Vector3(-1, yt, z0), Vector3(1, yt, z0), Vector3(1, yt, z1), Vector3(-1, yt, z1), Vector3.UP,
+			"floor_metal", Vector2(0, 0), Vector2(1, 0), Vector2(1, 0.16), Vector2(0, 0.16))
+		# riser (hazard nosing so steps read from a distance)
+		quad(st, Vector3(-1, yb, z0), Vector3(1, yb, z0), Vector3(1, yt, z0), Vector3(-1, yt, z0), Vector3.BACK,
+			"hazard", Vector2(0, 0), Vector2(1, 0), Vector2(1, 0.11), Vector2(0, 0.11))
+		# side stringers down to the floor
+		for sx in [-1.0, 1.0]:
+			quad(st, Vector3(sx, 0, z0), Vector3(sx, 0, z1), Vector3(sx, yt, z1), Vector3(sx, yt, z0), Vector3(sx, 0, 0),
+				"wall_lower", Vector2(0, 0), Vector2(0.33, 0), Vector2(0.33, minf(yt / 2.0, 1.0)), Vector2(0, minf(yt / 2.0, 1.0)))
+	# handrails both sides: sloped rail + posts
+	for sx in [-0.93, 0.93]:
+		var a: Vector3 = Vector3(sx, k * h + 1.0, 1.0)
+		var b := Vector3(sx, (k + 1) * h + 1.0, -1.0)
+		var t := 0.03
+		for face in [[Vector3(0, t, 0), Vector3.UP], [Vector3(0, -t, 0), Vector3.DOWN], [Vector3(t, 0, 0), Vector3.RIGHT], [Vector3(-t, 0, 0), Vector3.LEFT]]:
+			var o: Vector3 = face[0]
+			var side: Vector3 = Vector3(t, 0, 0) if absf(o.y) > 0 else Vector3(0, t, 0)
+			quad(st, a + o - side, b + o - side, b + o + side, a + o + side, face[1], "hazard", Vector2(0, 0), Vector2(1, 0), Vector2(1, 0.03), Vector2(0, 0.03))
+		for pz in [0.8, -0.2]:
+			var py: float = k * h + (1.0 - pz) / 2.0 * h
+			box(st, Vector3(sx - 0.025, py, pz - 0.025), Vector3(sx + 0.025, py + 1.0, pz + 0.025), "trim", "trim")
+	# back face at the top of the segment (visible from the far side / below)
+	var top := (k + 1) * h
+	quad(st, Vector3(1, 0, -1), Vector3(-1, 0, -1), Vector3(-1, top, -1), Vector3(1, top, -1), Vector3.FORWARD,
+		"wall_lower", Vector2(0, 0), Vector2(1, 0), Vector2(1, minf(top / 2.0, 1.0)), Vector2(0, minf(top / 2.0, 1.0)))
+
+# ------------------------------------------------------- tubes (ducts/shafts) ----
+## Cross-sections are lists of (s, y) points going round the tube; s is lateral
+## (right of the travel direction). Faces point inward.
+const OCT := [Vector2(-0.45, 0), Vector2(0.45, 0), Vector2(0.95, 0.5), Vector2(0.95, 2.1), Vector2(0.45, 2.6), Vector2(-0.45, 2.6), Vector2(-0.95, 2.1), Vector2(-0.95, 0.5)]
+const DUCT := [Vector2(-0.7, 0), Vector2(0.7, 0), Vector2(0.7, 1.2), Vector2(-0.7, 1.2)]
+
+func _tube_tile(a: Vector2, b: Vector2, floor_tile: String, wall_tile: String) -> String:
+	if a.y == 0 and b.y == 0:
+		return floor_tile
+	return wall_tile
+
+## straight tube along dir (unit, XZ) from t0 to t1 (distance from cell centre)
+func tube_run(st: SurfaceTool, dir: Vector3, t0: float, t1: float, sec: Array, floor_tile: String, wall_tile: String) -> void:
+	var r := Vector3.UP.cross(dir)
+	var cy := 0.0
+	var cs := 0.0
+	for p in sec:
+		cy += (p as Vector2).y
+	cy /= sec.size()
+	for i in sec.size():
+		var a: Vector2 = sec[i]
+		var b: Vector2 = sec[(i + 1) % sec.size()]
+		var mid := (a + b) * 0.5
+		var n := (r * (cs - mid.x) + Vector3.UP * (cy - mid.y)).normalized()
+		var pa0 := r * a.x + Vector3.UP * a.y + dir * t0
+		var pb0 := r * b.x + Vector3.UP * b.y + dir * t0
+		var pb1 := r * b.x + Vector3.UP * b.y + dir * t1
+		var pa1 := r * a.x + Vector3.UP * a.y + dir * t1
+		var w := a.distance_to(b) / 2.0
+		var l := (t1 - t0) / 2.0
+		quad(st, pa0, pb0, pb1, pa1, n, _tube_tile(a, b, floor_tile, wall_tile), Vector2(0, 0), Vector2(w, 0), Vector2(w, l), Vector2(0, l))
+
+## Junction chamber (square, half-width hw, height h) with openings on `arms`.
+func tube_hub(st: SurfaceTool, arms: int, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String) -> void:
+	quad(st, Vector3(-hw, 0, hw), Vector3(hw, 0, hw), Vector3(hw, 0, -hw), Vector3(-hw, 0, -hw), Vector3.UP, floor_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, hw), Vector2(0, hw))
+	quad(st, Vector3(-hw, h, -hw), Vector3(hw, h, -hw), Vector3(hw, h, hw), Vector3(-hw, h, hw), Vector3.DOWN, wall_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, hw), Vector2(0, hw))
+	for i in 4:
+		var d: Vector3 = DIRS[i]
+		var r := Vector3.UP.cross(d)
+		var c := d * hw
+		if arms & (1 << i):
+			# fill between the square opening and the tube cross-section (corner wedges)
+			for corner in [[Vector2(-hw, 0), Vector2(-hw, h)], [Vector2(hw, 0), Vector2(hw, h)]]:
+				for cp in corner:
+					var q: Vector2 = cp
+					# nearest two section points to this square corner
+					var best := []
+					for p in sec:
+						best.append([(p as Vector2).distance_to(q), p])
+					best.sort_custom(func(x, y): return x[0] < y[0])
+					var p1: Vector2 = best[0][1]
+					var p2: Vector2 = best[1][1]
+					if p1.distance_to(q) < 0.01:
+						continue
+					poly(st, [c + r * q.x + Vector3.UP * q.y, c + r * p1.x + Vector3.UP * p1.y, c + r * p2.x + Vector3.UP * p2.y], -d, wall_tile,
+						[Vector2(0, 0), Vector2(0.2, 0), Vector2(0.2, 0.2)])
+		else:
+			quad(st, c - r * hw, c + r * hw, c + r * hw + Vector3.UP * h, c - r * hw + Vector3.UP * h, -d, wall_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, minf(h / 2.0, 1.0)), Vector2(0, minf(h / 2.0, 1.0)))
+
+## Collision for a tube cell: open centre + arms, everything else solid.
+func tube_collision(arms: int, hw: float, h: float) -> Array:
+	var e := [-1.0, -hw, hw, 1.0]
+	var shapes := shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, h, -1), Vector3(1, 4, 1))
+	for zi in 3:
+		for xi in 3:
+			var open := xi == 1 and zi == 1
+			if xi == 1 and zi == 2 and arms & 1: open = true
+			if xi == 2 and zi == 1 and arms & 2: open = true
+			if xi == 1 and zi == 0 and arms & 4: open = true
+			if xi == 0 and zi == 1 and arms & 8: open = true
+			if not open:
+				shapes += shape_box(Vector3(e[xi], 0, e[zi]), Vector3(e[xi + 1], h, e[zi + 1]))
+	return shapes
+
+func tube_family(prefix: String, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String, light_strip: bool, note: String) -> void:
+	var names := {1: "_end", 3: "_corner", 5: "", 7: "_t", 15: "_cross"}
+	for arms in [1, 3, 5, 7, 15]:
+		var st := new_st()
+		if arms == 5:
+			tube_run(st, Vector3(0, 0, 1), -1.0, 1.0, sec, floor_tile, wall_tile)
+			if light_strip:
+				quad(st, Vector3(-0.08, h - 0.01, -1), Vector3(0.08, h - 0.01, -1), Vector3(0.08, h - 0.01, 1), Vector3(-0.08, h - 0.01, 1), Vector3.DOWN,
+					"light_strip", Vector2(0.1, 0.45), Vector2(0.9, 0.45), Vector2(0.9, 0.55), Vector2(0.1, 0.55))
+		else:
+			tube_hub(st, arms, sec, hw, h, floor_tile, wall_tile)
+			for i in 4:
+				if arms & (1 << i):
+					tube_run(st, DIRS[i], hw, 1.0, sec, floor_tile, wall_tile)
+		add_item(lib_structure, prefix + names[arms], finish(st), tube_collision(arms, hw, h), note)
+
+## Wall face (+Z, at the face plane) with a tube-shaped opening, and the tube running
+## from the face back through the wall cell to its -Z edge.
+func wall_with_tube(st: SurfaceTool, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String) -> void:
+	var f = FACE_F
+	side_auto(st, f, -1, 1, h, 4.0, 0, "wall_lower", "wall_upper")       # above the opening
+	side_auto(st, f, -1, -hw, 0, h, 0, "wall_lower", "wall_upper")       # left of it
+	side_auto(st, f, hw, 1, 0, h, 0, "wall_lower", "wall_upper")         # right of it
+	var zf := 1.0 - FD
+	for cp in [Vector2(-hw, 0), Vector2(hw, 0), Vector2(-hw, h), Vector2(hw, h)]:
+		var best := []
+		for p in sec:
+			best.append([(p as Vector2).distance_to(cp), p])
+		best.sort_custom(func(x, y): return x[0] < y[0])
+		var p1: Vector2 = best[0][1]
+		var p2: Vector2 = best[1][1]
+		if p1.distance_to(cp) < 0.01:
+			continue
+		poly(st, [Vector3(cp.x, cp.y, zf), Vector3(p1.x, p1.y, zf), Vector3(p2.x, p2.y, zf)], Vector3.BACK, "wall_lower",
+			[Vector2(0, 0), Vector2(0.2, 0), Vector2(0.2, 0.2)])
+	tube_run(st, Vector3(0, 0, -1), -zf, 1.0, sec, floor_tile, wall_tile)
+
+func wall_tube_collision(hw: float, h: float) -> Array:
+	var zf := 1.0 - FD
+	return (shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1))
+		+ shape_box(Vector3(-1, 0, -1), Vector3(-hw, 4, zf)) + shape_box(Vector3(hw, 0, -1), Vector3(1, 4, zf))
+		+ shape_box(Vector3(-hw, h, -1), Vector3(hw, 4, zf)))
+
+func build_tubes() -> void:
+	tube_family("shaft", OCT, 0.95, 2.6, "floor_metal", "recess_back", true, "Octagonal maintenance shaft (auto-joins)")
+	tube_family("duct", DUCT, 0.7, 1.2, "floor_metal", "vent", false, "Crawl duct, 1.2m tall - crouch to fit (auto-joins)")
+	var st := new_st()
+	wall_with_tube(st, OCT, 0.95, 2.6, "floor_metal", "recess_back")
+	add_item(lib_structure, "wall_shaft", finish(st), wall_tube_collision(0.75, 2.6), "Wall face with a shaft mouth; the shaft continues out of -Z")
+	st = new_st()
+	wall_with_tube(st, DUCT, 0.7, 1.2, "floor_metal", "vent")
+	add_item(lib_structure, "wall_duct", finish(st), wall_tube_collision(0.7, 1.2), "Wall face with a duct mouth at floor level; duct continues out of -Z")
+
+# ------------------------------------------------------------ upper floors ----
+func build_upper() -> void:
+	# catwalk: see-through grating deck with an underside, ceiling above
+	var st := new_st()
+	quad(st, Vector3(-1, 0, 1), Vector3(1, 0, 1), Vector3(1, 0, -1), Vector3(-1, 0, -1), Vector3.UP, "gutter", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
+	quad(st, Vector3(-1, -0.15, -1), Vector3(1, -0.15, -1), Vector3(1, -0.15, 1), Vector3(-1, -0.15, 1), Vector3.DOWN, "gutter", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
+	for sx in [-0.7, 0.7]:   # two stringer beams underneath
+		box(st, Vector3(sx - 0.08, -0.45, -1), Vector3(sx + 0.08, -0.15, 1), "beam", "beam", "beam", true)
+	ceiling_face(st)
+	add_item(lib_structure, "catwalk", finish(st), shape_box(Vector3(-1, -0.15, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1)), "Catwalk grating over open air (ceiling above)")
+	# glass wall: open on +Z and -Z, window through the middle
+	st = new_st()
+	var gst := new_st()
+	for sd in [FACE_F, Side.new(Vector3(0, 0, -1), Vector3(-1, 0, 0), FD)]:
+		side_auto(st, sd, -1, 1, 0, 0.9, 0, "wall_lower", "wall_upper")
+		side_auto(st, sd, -1, 1, 3.0, 4.0, 0, "wall_lower", "wall_upper")
+		side_auto(st, sd, -1, -0.8, 0.9, 3.0, 0, "wall_lower", "wall_upper")
+		side_auto(st, sd, 0.8, 1, 0.9, 3.0, 0, "wall_lower", "wall_upper")
+	var zf := 1.0 - FD
+	quad(st, Vector3(-0.8, 0.9, zf), Vector3(0.8, 0.9, zf), Vector3(0.8, 0.9, -zf), Vector3(-0.8, 0.9, -zf), Vector3.UP, "trim", Vector2(0, 0), Vector2(0.8, 0), Vector2(0.8, 0.25), Vector2(0, 0.25))
+	quad(st, Vector3(-0.8, 3.0, -zf), Vector3(0.8, 3.0, -zf), Vector3(0.8, 3.0, zf), Vector3(-0.8, 3.0, zf), Vector3.DOWN, "trim", Vector2(0, 0), Vector2(0.8, 0), Vector2(0.8, 0.25), Vector2(0, 0.25))
+	for sx in [-0.8, 0.8]:
+		quad(st, Vector3(sx, 0.9, -zf), Vector3(sx, 0.9, zf), Vector3(sx, 3.0, zf), Vector3(sx, 3.0, -zf), Vector3(-signf(sx), 0, 0), "trim", Vector2(0, 0), Vector2(0.25, 0), Vector2(0.25, 1), Vector2(0, 1))
+	for nz in [1.0, -1.0]:
+		quad(gst, Vector3(-0.8, 0.9, 0.0), Vector3(0.8, 0.9, 0.0), Vector3(0.8, 3.0, 0.0), Vector3(-0.8, 3.0, 0.0), Vector3(0, 0, nz), "light_strip", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
+	var gm := finish(st)
+	gst.commit(gm)
+	gm.surface_set_material(1, load("res://kit/glass_material.tres"))
+	add_item(lib_structure, "wall_glass", gm, shape_box(Vector3(-1, 0, -zf), Vector3(1, 4, zf)), "Interior window wall between two rooms (needs open space on +Z and -Z)")
+
+func rail_edge(st: SurfaceTool, i: int) -> void:
+	var d: Vector3 = DIRS[i]
+	var r := Vector3.UP.cross(d)
+	var c := d * 0.92
+	for y in [0.5, 1.05]:
+		box_oriented(st, c + Vector3.UP * y, r, 1.0, 0.03, 0.03, "hazard" if y > 1.0 else "trim")
+	for sx in [-0.9, 0.0, 0.9]:
+		var p: Vector3 = c + r * sx
+		box(st, Vector3(p.x - 0.03, 0, p.z - 0.03), Vector3(p.x + 0.03, 1.08, p.z + 0.03), "trim", "trim")
+
+## thin box centred at c, long axis along `axis` (unit X or Z), half-length hl
+func box_oriented(st: SurfaceTool, c: Vector3, axis: Vector3, hl: float, hw: float, hh: float, tile: String) -> void:
+	var ext := Vector3(absf(axis.x) * hl + absf(axis.z) * hw, hh, absf(axis.z) * hl + absf(axis.x) * hw)
+	box(st, c - ext, c + ext, tile, tile, tile)
+
+func build_rails_cover() -> void:
+	var names := {1: "rail", 3: "rail_corner", 5: "rail_both", 7: "rail_u", 15: "rail_ring"}
+	for mask in [1, 3, 5, 7, 15]:
+		var st := new_st()
+		var shapes := []
+		for i in 4:
+			if mask & (1 << i):
+				rail_edge(st, i)
+				var d: Vector3 = DIRS[i]
+				var a := d * 0.92
+				var ext := Vector3(absf(d.z) * 1.0 + absf(d.x) * 0.05, 0.6, absf(d.x) * 1.0 + absf(d.z) * 0.05)
+				shapes += shape_box(a - ext + Vector3(0, 0.6, 0), a + ext + Vector3(0, 0.6, 0))
+		add_item(lib_props, names[mask], finish(st), shapes, "Railing on the cell's edge(s), for upper floors next to open air")
+	# low cover barrier along X
+	var st := new_st()
+	box(st, Vector3(-1, 0, -0.2), Vector3(1, 1.05, 0.2), "wall_lower", "hazard")
+	add_item(lib_props, "cover", finish(st), shape_box(Vector3(-1, 0, -0.2), Vector3(1, 1.05, 0.2)), "Waist-high cover barrier along X")
+	# console desk along X, screens facing +Z
+	st = new_st()
+	box(st, Vector3(-0.95, 0, -0.35), Vector3(0.95, 0.9, 0.35), "kick", "trim")
+	for sx in [-0.5, 0.5]:
+		var a: Vector3 = Vector3(sx - 0.4, 0.95, -0.25)
+		quad(st, a, a + Vector3(0.8, 0, 0), a + Vector3(0.8, 0.45, -0.1), a + Vector3(0, 0.45, -0.1), Vector3(0, 0.2, 1).normalized(), "console",
+			Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
+		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
+			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
+	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -0.35), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
+
+func build_device_meshes() -> void:
+	# ladder: rails + rungs, 5m tall, in the XY plane at z = 0
+	var st := new_st()
+	for sx in [-0.32, 0.32]:
+		box(st, Vector3(sx - 0.03, 0, -0.03), Vector3(sx + 0.03, 5.0, 0.03), "hazard", "trim")
+	var y := 0.3
+	while y < 5.0:
+		box(st, Vector3(-0.3, y - 0.02, -0.02), Vector3(0.3, y + 0.02, 0.02), "trim", "trim")
+		y += 0.3
+	for yb in [0.6, 2.4, 3.8]:   # brackets back toward the wall
+		for sx in [-0.32, 0.32]:
+			box(st, Vector3(sx - 0.02, yb, -0.9), Vector3(sx + 0.02, yb + 0.05, 0.0), "beam", "beam")
+	ResourceSaver.save(finish(st), "res://kit/ladder.res")
+	# elevator platform: 1.9m square deck, top at y = 0
+	st = new_st()
+	box(st, Vector3(-0.95, -0.25, -0.95), Vector3(0.95, 0.0, 0.95), "hazard", "floor_metal", "beam")
+	ResourceSaver.save(finish(st), "res://kit/elevator_platform.res")
+	# button post: waist-high pedestal with a glowing button face (+Z)
+	st = new_st()
+	box(st, Vector3(-0.08, 0, -0.08), Vector3(0.08, 1.0, 0.08), "beam", "trim")
+	box(st, Vector3(-0.16, 1.0, -0.12), Vector3(0.16, 1.3, 0.12), "kick", "trim")
+	glow_box(st, Vector3(-0.07, 1.08, 0.12), Vector3(0.07, 1.22, 0.14))
+	ResourceSaver.save(finish(st), "res://kit/button_post.res")
+	# breaker: tall panel with a hazard frame and a big lever housing (+Z)
+	st = new_st()
+	box(st, Vector3(-0.4, 0, -0.15), Vector3(0.4, 1.9, 0.15), "wall_lower", "trim")
+	box(st, Vector3(-0.3, 0.9, 0.15), Vector3(0.3, 1.6, 0.2), "hazard", "trim")
+	glow_box(st, Vector3(-0.12, 1.65, 0.15), Vector3(0.12, 1.75, 0.18), "warning_lamp", Vector2(0.47, 0.47), Vector2(0.53, 0.53))
+	ResourceSaver.save(finish(st), "res://kit/breaker.res")
+	st = new_st()
+	box(st, Vector3(-0.05, -0.05, 0), Vector3(0.05, 0.05, 0.25), "trim", "trim")
+	box(st, Vector3(-0.08, -0.08, 0.25), Vector3(0.08, 0.08, 0.32), "hazard", "hazard")
+	ResourceSaver.save(finish(st), "res://kit/breaker_lever.res")
+	# explosive canister
+	st = new_st()
+	cylinder_y(st, Vector3.ZERO, 0.32, 0.0, 1.1, "rust_plate", 10)
+	quad(st, Vector3(-0.3, 1.1, 0.3), Vector3(0.3, 1.1, 0.3), Vector3(0.3, 1.1, -0.3), Vector3(-0.3, 1.1, -0.3), Vector3.UP, "warning_lamp", Vector2(0.3, 0.3), Vector2(0.7, 0.3), Vector2(0.7, 0.7), Vector2(0.3, 0.7))
+	for yb in [0.2, 0.85]:
+		cylinder_y(st, Vector3.ZERO, 0.34, yb, yb + 0.08, "hazard", 10)
+	ResourceSaver.save(finish(st), "res://kit/canister.res")
+	# vent cover grille (1.4 x 1.2, faces +Z)
+	st = new_st()
+	quad(st, Vector3(-0.7, 0, 0.02), Vector3(0.7, 0, 0.02), Vector3(0.7, 1.2, 0.02), Vector3(-0.7, 1.2, 0.02), Vector3.BACK, "vent", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
+	quad(st, Vector3(0.7, 0, -0.02), Vector3(-0.7, 0, -0.02), Vector3(-0.7, 1.2, -0.02), Vector3(0.7, 1.2, -0.02), Vector3.FORWARD, "vent", Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1))
+	ResourceSaver.save(finish(st), "res://kit/vent_cover.res")
 
 func build_floors() -> void:
 	var st: SurfaceTool
@@ -506,6 +800,40 @@ func build_floors() -> void:
 		add_item(lib_structure, f[0], finish(st), floor_shapes(), f[2])
 	st = new_st(); floor_face(st, "floor_concrete"); ceiling_with_panel(st, 0.75, 0.5, 0.125)
 	add_item(lib_structure, "floor_light", finish(st), floor_shapes(), "Deck floor, recessed ceiling light (bakes OmniLight)")
+	# unpowered ceiling light (power zones swap it to floor_light when the breaker is thrown)
+	st = new_st(); floor_face(st, "floor_concrete"); ceiling_with_panel(st, 0.75, 0.5, 0.125, "kick")
+	add_item(lib_structure, "floor_light_off", finish(st), floor_shapes(), "Ceiling light with no power (see Level power zones)")
+	# open-ceiling floors: the room continues up into the floor above (double height)
+	for f in [["floor_open", "floor_concrete"], ["floor_metal_open", "floor_metal"], ["floor_grate_open", "floor_grate"], ["floor_line_open", "floor_line"]]:
+		st = new_st(); floor_face(st, f[1])
+		add_item(lib_structure, f[0], finish(st), shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)), "Floor with no ceiling (open to the level above)")
+	# open air: no floor, ceiling only (upper level of a double-height space)
+	st = new_st(); ceiling_face(st)
+	add_item(lib_structure, "void", finish(st), shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1)), "Open air: ceiling only, no floor")
+	st = new_st(); ceiling_with_panel(st, 0.75, 0.5, 0.125)
+	add_item(lib_structure, "void_light", finish(st), shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1)), "Open air with a ceiling light (bakes OmniLight)")
+	st = new_st(); ceiling_with_panel(st, 0.75, 0.5, 0.125, "kick")
+	add_item(lib_structure, "void_light_off", finish(st), shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1)), "Open-air ceiling light with no power (see Level power zones)")
+	st = new_st()
+	add_item(lib_structure, "void_open", finish_empty(st), [], "Open air, no ceiling either (stacked shafts)")
+	# stairs: 3 segments ascend toward local -Z, 4m rise over 6m (33.7 degrees)
+	for k in 3:
+		st = new_st()
+		stair_mesh(st, k)
+		var h := 4.0 / 3.0
+		var wedge := ConvexPolygonShape3D.new()
+		wedge.points = PackedVector3Array([Vector3(-1, 0, 1), Vector3(1, 0, 1), Vector3(-1, 0, -1), Vector3(1, 0, -1),
+			Vector3(-1, k * h, 1), Vector3(1, k * h, 1), Vector3(-1, (k + 1) * h, -1), Vector3(1, (k + 1) * h, -1)])
+		var shapes := [wedge, Transform3D()]
+		for sx in [-1.0, 0.94]:   # invisible rail walls so nobody drops into the side gap
+			var rail := ConvexPolygonShape3D.new()
+			rail.points = PackedVector3Array([Vector3(sx, k * h, 1), Vector3(sx + 0.06, k * h, 1), Vector3(sx, k * h, -1), Vector3(sx + 0.06, k * h, -1),
+				Vector3(sx, k * h + 1.05, 1), Vector3(sx + 0.06, k * h + 1.05, 1), Vector3(sx, (k + 1) * h + 1.05, -1), Vector3(sx + 0.06, (k + 1) * h + 1.05, -1)])
+			shapes += [rail, Transform3D()]
+		if k == 0:
+			shapes += shape_box(Vector3(-1, 3.85, -1), Vector3(1, 4, 1))   # bottom segment keeps its ceiling
+			ceiling_face(st)
+		add_item(lib_structure, "stair_%d" % k, finish(st), shapes, "Stairs segment %d of 3 (ascends toward -Z; floor above must be open for segments 1-2)" % k)
 	# doors: passage along Z, frame faces sit on the wall face planes (+-0.25) so the
 	# wall profile runs straight through above the opening. Slabs are baked by Level.
 	for spec in [["door", [-1.0, 1.0], "Door frame, passage along Z (bakes a sliding door)"],
@@ -651,9 +979,16 @@ func _init() -> void:
 	sm.set_shader_parameter("emission_energy", 2.0)
 	ResourceSaver.save(sm, "res://kit/kit_material.tres")
 	mat = load("res://kit/kit_material.tres")
+	var gm := ShaderMaterial.new()
+	gm.shader = load("res://art/shaders/glass.gdshader")
+	ResourceSaver.save(gm, "res://kit/glass_material.tres")
 	build_walls()
 	build_floors()
 	build_props()
+	build_tubes()
+	build_upper()
+	build_rails_cover()
+	build_device_meshes()
 	# door slab (not a grid piece: spawned by Level for each "door" cell)
 	var ds := new_st()
 	for sd in [SIDE_F, SIDE_B]:

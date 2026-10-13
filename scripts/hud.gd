@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var damage_flash: ColorRect = $DamageFlash
 @onready var toast_label: Label = $Toast
 @onready var banner: Label = $Banner
+@onready var prompt_label: Label = $Prompt
 
 func set_health(h: float, _max_h: float) -> void:
 	health_label.text = str(int(ceil(h)))
@@ -31,3 +32,6 @@ func toast(text: String, color := Color.WHITE) -> void:
 func show_banner(text: String) -> void:
 	banner.text = text
 	banner.visible = true
+
+func set_prompt(text: String) -> void:
+	prompt_label.text = ("[E]  " + text) if text != "" else ""

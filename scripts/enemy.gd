@@ -26,6 +26,10 @@ var attack_t := 0.0
 var anim_t := 0.0
 var flash := 0.0
 var home_y := 0.0
+## fliers keep this height above whatever floor is under them (stairs, lower decks)
+var hover := 1.3
+var _ground := 0.0
+var _ground_t := 0.0
 var rng := RandomNumberGenerator.new()
 var mat: ShaderMaterial
 var strafe_dir := 1.0
@@ -139,6 +143,15 @@ func _gravity(delta: float) -> void:
 	if data.movement == "ground" and not is_on_floor():
 		velocity.y -= 20.0 * delta
 
+func _ground_y() -> float:
+	_ground_t -= get_physics_process_delta_time()
+	if _ground_t <= 0.0:
+		_ground_t = 0.2
+		var q := PhysicsRayQueryParameters3D.create(global_position, global_position + Vector3(0, -12, 0), MASK_WORLD)
+		var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		_ground = hit.position.y if hit else home_y - hover
+	return _ground
+
 func _can_see() -> bool:
 	var q := PhysicsRayQueryParameters3D.create(eye.global_position, target.global_position + Vector3(0, 1.5, 0), MASK_WORLD)
 	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
@@ -187,7 +200,7 @@ func _steer(delta: float, dist: float, speed_scale := 1.0) -> void:
 		blocked_t = 0.0
 	if data.movement == "fly":
 		var bob := sin(anim_t * 2.2) * 0.25
-		want.y = (home_y + bob - global_position.y) * 3.0
+		want.y = (_ground_y() + hover + bob - global_position.y) * 3.0
 		velocity = velocity.move_toward(want, 10.0 * delta)
 	else:
 		var vy := velocity.y

@@ -10,6 +10,7 @@
 [ext_resource type="Shader" path="res://art/shaders/glow.gdshader" id="8"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
+resource_local_to_scene = true
 radius = 0.4
 height = 1.8
 

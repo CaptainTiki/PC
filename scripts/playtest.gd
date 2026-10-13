@@ -120,11 +120,20 @@ func _physics_process(delta: float) -> void:
 				best_d = dd
 	var exit := get_tree().current_scene.find_child("Exit", true, false) as Node3D
 	var goal: Node3D = exit if exit else (live[0] if not live.is_empty() else null)
+	# power first: walk to any breaker not yet thrown and throw it
+	for b in get_tree().current_scene.find_children("*", "Breaker", true, false):
+		if not (b as Breaker).thrown:
+			goal = b
+			if player.global_position.distance_to(b.global_position) < 2.2:
+				_log("throwing breaker")
+				(b as Breaker).interact(player)
+				_queue(0.6, "power_on")
+			break
 	var move_dir := Vector3.ZERO
 	if best == null:
 		# nothing in view: walk the level toward the exit (or the nearest enemy)
 		if goal and level:
-			move_dir = level.flow_dir(player.global_position, goal.global_position)
+			move_dir = level.flow_dir(player.global_position, goal.global_position, true)
 			if move_dir == Vector3.ZERO:
 				move_dir = (goal.global_position - player.global_position) * Vector3(1, 0, 1)
 		if move_dir.length() > 0.01:
