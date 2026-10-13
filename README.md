@@ -51,6 +51,9 @@ console) are switches, wired with `[links] link c r f to c r f ...`. Locks live 
 `Level.door_locks`, so re-baking keeps them; locked doors are walls to the flow field.
 `lock c r f oneway n|e|s|w` opens only from that side (then stays open as a shortcut);
 `lock c r f keycard [id]` opens once you carry that keycard (`q` places a crew keycard).
+Ledges: `w` is a walkway 1.8 m up along a cell's walls (joins round corners), `z` the
+same with a crate to jump up from, and `i` a crawl duct whose floor is 1.8 m up, so its
+mouth is a vent at ledge height (shoot the cover, crouch in).
 Climbing: `u` is a climb cell under a ceiling grate `G` on the floor above (crate, a
 ledge 2 m up on the wall, a short ladder through the grate). `G` alone is a hatch with
 a shootable grate you can drop through.
@@ -76,8 +79,9 @@ lit), `closet` (shelves, mop).
   maintenance shaft -> exit. 20 anomalies; bot clears it in ~70s.
 
 - `levels/chain_test` — mini chain (pass 2): command room behind glass with a one-way
-  door and the seal release; reached by climbing a storeroom crate and ledge through a
-  ceiling grate, crossing maintenance above and dropping through a grate. Keycard door
+  door and the seal release; reached from the storeroom (crate -> ledge -> high vent ->
+  crouch duct -> hidden riser ladder), across maintenance above, then down through a
+  grate. Keycard door
   past the seal.
 - `levels/kit03_test` — door and detour test map (pass 1 of deck03): jammed corridor with
   the duct/riser/ladder detour through maintenance, a security post locked from the

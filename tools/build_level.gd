@@ -35,7 +35,10 @@ extends SceneTree
 ##   other   D  door (DD = double door)    k  power breaker (against the nearest wall)
 ##           r  door release panel (on the nearest wall)   y  lockdown console (back to the wall)
 ##           q  crew keycard
-##   climb   u  climb cell under a ceiling grate: crate, ledge 2 m up on the wall, short ladder
+##   climb   w  ledge: walkway 1.8 m up along this cell's walls (joins round corners)
+##           z  ledge + a crate on the room side to jump up from
+##           i  high crawl duct (floor 1.8 m up): its mouth is a vent at ledge height
+##           u  climb cell under a ceiling grate: crate, ledge 2 m up on the wall, short ladder
 ##              up through the grate (the cell above must be 'G'; landing = cell above that wall)
 ##           G  ceiling grate: a hatch in this floor with a shootable grate (drop through it,
 ##              or climb up to it from a 'u' below)
@@ -68,6 +71,7 @@ const FLOORS := {
 	"s": "floor", "h": "floor", "a": "floor", "E": "floor",
 	"k": "floor", "b": "floor", "n": "floor_metal", "j": "floor", "l": "floor_metal",
 	"c": "catwalk", "r": "floor", "y": "floor", "u": "floor_metal", "q": "floor",
+	"w": "floor", "z": "floor",
 }
 ## things that can stand on a catwalk: with 2+ catwalk neighbours the cell is catwalk
 const ON_CATWALK := "@eshaExXb"
@@ -79,6 +83,7 @@ const OPEN_VARIANT := {"floor": "floor_open", "floor_metal": "floor_metal_open",
 const MDIRS := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
 const TRAYS := {1: "tray_end", 3: "tray_corner", 5: "tray", 7: "tray_t", 15: "tray_cross"}
 const TUBES := {1: "_end", 3: "_corner", 5: "", 7: "_t", 15: "_cross"}
+const LEDGES := {1: "ledge", 3: "ledge_corner", 5: "ledge_both", 7: "ledge_u", 15: "ledge_ring"}
 const RAILS := {1: "rail", 3: "rail_corner", 5: "rail_both", 7: "rail_u", 15: "rail_ring"}
 const STAIR_DIRS := {"s": 0, "e": 1, "n": 2, "w": 3}   # -> MDIRS index of the ascent
 
@@ -112,7 +117,7 @@ func is_wall(s: String) -> bool:
 	return WALLS.has(s) or s == "g"
 
 func is_tube(s: String) -> bool:
-	return s == "d" or s == "m"
+	return s == "d" or s == "m" or s == "i"
 
 func opens(f: int, c: int, r: int) -> bool:
 	# for wall signatures: anything you can stand in or see across (doors count as wall)
@@ -516,10 +521,11 @@ func _init() -> void:
 					var fori := wori
 					var mouth := tube_mouth(f, c, r, sig[0], sig[1])
 					if not mouth.is_empty():
-						face_item = "wall_duct" if mouth[0] == "d" else "wall_shaft"
+						face_item = {"d": "wall_duct", "m": "wall_shaft", "i": "wall_hduct"}[mouth[0]]
 						fori = orient_k(mouth[1], grid)
-						if mouth[0] == "d":
-							var vc := place(vent_scene, pos + Vector3(MDIRS[mouth[1]].x, 0, MDIRS[mouth[1]].y) * 0.27, mouth[1], devices)
+						if mouth[0] != "m":
+							var vy := 1.8 if mouth[0] == "i" else 0.0
+							var vc := place(vent_scene, pos + Vector3(MDIRS[mouth[1]].x, 0, MDIRS[mouth[1]].y) * 0.27 + Vector3(0, vy, 0), mouth[1], devices)
 							vc.name = "VentCover"
 					elif feature != "":
 						if straight:
@@ -540,7 +546,7 @@ func _init() -> void:
 						if open_above(f, oc.x, oc.y):
 							n_above += 1
 					var floor_trim := "gutter_glow" if s == "%" else "gutter"
-					if not mouth.is_empty() or (n_air > 0 and n_air < cells.size()):
+					if (not mouth.is_empty() and mouth[0] != "i") or (n_air > 0 and n_air < cells.size()):
 						floor_trim = "band_floor"
 					if n_air < cells.size():
 						trim.set_cell_item(Vector3i(c, 2 * f, r), tid[sig_name(floor_trim, cn[1], cn[2])], wori)
@@ -578,7 +584,7 @@ func _init() -> void:
 					if not TUBES.has(canonical(arms, 0)[1]):
 						arms = 5
 					var tc := canonical(arms, 0)
-					var prefix := "duct" if s == "d" else "shaft"
+					var prefix: String = {"d": "duct", "m": "shaft", "i": "hduct"}[s]
 					grid.set_cell_item(cell, sid[prefix + TUBES[tc[1]]], orient_k((4 - int(tc[3])) % 4, grid))
 					continue
 				# ------------------------------------------------- open-air pieces
@@ -710,6 +716,25 @@ func _init() -> void:
 					"n":
 						var along_z := (ch(f, c, r - 1) == "n" or ch(f, c, r + 1) == "n") and not (ch(f, c - 1, r) == "n" or ch(f, c + 1, r) == "n")
 						props.set_cell_item(cell, pid["cover"], orient_k(1, props) if along_z else 0)
+					"w", "z":
+						var lmask := 0
+						var away := Vector2.ZERO
+						for i in 4:
+							var d: Vector2i = MDIRS[i]
+							if is_wall(ch(f, c + d.x, r + d.y)):
+								lmask |= 1 << i
+								away -= Vector2(d)
+						if lmask != 0:
+							var lc := canonical(lmask, 0)
+							if LEDGES.has(lc[1]):
+								props.set_cell_item(cell, pid[LEDGES[lc[1]]], orient_k((4 - int(lc[3])) % 4, props))
+							else:
+								props.set_cell_item(cell, pid["ledge_both"], orient_k(0 if lmask == 5 else 1, props))
+						if s == "z":
+							# crate clear of the ledge's footprint, on the room side, so you can stand on it
+							var dv := Vector2(signf(away.x), signf(away.y)) if away != Vector2.ZERO else Vector2(0, 1)
+							var cz := place(scenes["x"], pos + Vector3(dv.x, 0, dv.y) * 0.72)
+							cz.rotation.y = deg_to_rad(6.0)
 					"j":
 						var wi := wall_dir(f, c, r)
 						props.set_cell_item(cell, pid["console_desk"], orient_k((wi + 2) % 4, props) if wi >= 0 else 0)

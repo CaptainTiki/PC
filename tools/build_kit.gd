@@ -577,8 +577,8 @@ func tube_run(st: SurfaceTool, dir: Vector3, t0: float, t1: float, sec: Array, f
 		quad(st, pa0, pb0, pb1, pa1, n, _tube_tile(a, b, floor_tile, wall_tile), Vector2(0, 0), Vector2(w, 0), Vector2(w, l), Vector2(0, l))
 
 ## Junction chamber (square, half-width hw, height h) with openings on `arms`.
-func tube_hub(st: SurfaceTool, arms: int, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String) -> void:
-	quad(st, Vector3(-hw, 0, hw), Vector3(hw, 0, hw), Vector3(hw, 0, -hw), Vector3(-hw, 0, -hw), Vector3.UP, floor_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, hw), Vector2(0, hw))
+func tube_hub(st: SurfaceTool, arms: int, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String, y0 := 0.0) -> void:
+	quad(st, Vector3(-hw, y0, hw), Vector3(hw, y0, hw), Vector3(hw, y0, -hw), Vector3(-hw, y0, -hw), Vector3.UP, floor_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, hw), Vector2(0, hw))
 	quad(st, Vector3(-hw, h, -hw), Vector3(hw, h, -hw), Vector3(hw, h, hw), Vector3(-hw, h, hw), Vector3.DOWN, wall_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, hw), Vector2(0, hw))
 	for i in 4:
 		var d: Vector3 = DIRS[i]
@@ -586,7 +586,7 @@ func tube_hub(st: SurfaceTool, arms: int, sec: Array, hw: float, h: float, floor
 		var c := d * hw
 		if arms & (1 << i):
 			# fill between the square opening and the tube cross-section (corner wedges)
-			for corner in [[Vector2(-hw, 0), Vector2(-hw, h)], [Vector2(hw, 0), Vector2(hw, h)]]:
+			for corner in [[Vector2(-hw, y0), Vector2(-hw, h)], [Vector2(hw, y0), Vector2(hw, h)]]:
 				for cp in corner:
 					var q: Vector2 = cp
 					# nearest two section points to this square corner
@@ -601,12 +601,13 @@ func tube_hub(st: SurfaceTool, arms: int, sec: Array, hw: float, h: float, floor
 					poly(st, [c + r * q.x + Vector3.UP * q.y, c + r * p1.x + Vector3.UP * p1.y, c + r * p2.x + Vector3.UP * p2.y], -d, wall_tile,
 						[Vector2(0, 0), Vector2(0.2, 0), Vector2(0.2, 0.2)])
 		else:
-			quad(st, c - r * hw, c + r * hw, c + r * hw + Vector3.UP * h, c - r * hw + Vector3.UP * h, -d, wall_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, minf(h / 2.0, 1.0)), Vector2(0, minf(h / 2.0, 1.0)))
+			var b0 := Vector3.UP * y0
+			quad(st, c - r * hw + b0, c + r * hw + b0, c + r * hw + Vector3.UP * h, c - r * hw + Vector3.UP * h, -d, wall_tile, Vector2(0, 0), Vector2(hw, 0), Vector2(hw, minf((h - y0) / 2.0, 1.0)), Vector2(0, minf((h - y0) / 2.0, 1.0)))
 
 ## Collision for a tube cell: open centre + arms, everything else solid.
-func tube_collision(arms: int, hw: float, h: float) -> Array:
+func tube_collision(arms: int, hw: float, h: float, y0 := 0.0) -> Array:
 	var e := [-1.0, -hw, hw, 1.0]
-	var shapes := shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + shape_box(Vector3(-1, h, -1), Vector3(1, 4, 1))
+	var shapes := shape_box(Vector3(-1, -0.5, -1), Vector3(1, y0, 1)) + shape_box(Vector3(-1, h, -1), Vector3(1, 4, 1))
 	for zi in 3:
 		for xi in 3:
 			var open := xi == 1 and zi == 1
@@ -615,10 +616,10 @@ func tube_collision(arms: int, hw: float, h: float) -> Array:
 			if xi == 1 and zi == 0 and arms & 4: open = true
 			if xi == 0 and zi == 1 and arms & 8: open = true
 			if not open:
-				shapes += shape_box(Vector3(e[xi], 0, e[zi]), Vector3(e[xi + 1], h, e[zi + 1]))
+				shapes += shape_box(Vector3(e[xi], y0, e[zi]), Vector3(e[xi + 1], h, e[zi + 1]))
 	return shapes
 
-func tube_family(prefix: String, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String, light_strip: bool, note: String) -> void:
+func tube_family(prefix: String, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String, light_strip: bool, note: String, y0 := 0.0) -> void:
 	var names := {1: "_end", 3: "_corner", 5: "", 7: "_t", 15: "_cross"}
 	for arms in [1, 3, 5, 7, 15]:
 		var st := new_st()
@@ -628,21 +629,25 @@ func tube_family(prefix: String, sec: Array, hw: float, h: float, floor_tile: St
 				quad(st, Vector3(-0.08, h - 0.01, -1), Vector3(0.08, h - 0.01, -1), Vector3(0.08, h - 0.01, 1), Vector3(-0.08, h - 0.01, 1), Vector3.DOWN,
 					"light_strip", Vector2(0.1, 0.45), Vector2(0.9, 0.45), Vector2(0.9, 0.55), Vector2(0.1, 0.55))
 		else:
-			tube_hub(st, arms, sec, hw, h, floor_tile, wall_tile)
+			tube_hub(st, arms, sec, hw, h, floor_tile, wall_tile, y0)
 			for i in 4:
 				if arms & (1 << i):
 					tube_run(st, DIRS[i], hw, 1.0, sec, floor_tile, wall_tile)
-		add_item(lib_structure, prefix + names[arms], finish(st), tube_collision(arms, hw, h), note)
+		add_item(lib_structure, prefix + names[arms], finish(st), tube_collision(arms, hw, h, y0), note)
 
 ## Wall face (+Z, at the face plane) with a tube-shaped opening, and the tube running
 ## from the face back through the wall cell to its -Z edge.
-func wall_with_tube(st: SurfaceTool, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String) -> void:
+func wall_with_tube(st: SurfaceTool, sec: Array, hw: float, h: float, floor_tile: String, wall_tile: String, y0 := 0.0) -> void:
 	var f = FACE_F
 	side_auto(st, f, -1, 1, h, 4.0, 0, "wall_lower", "wall_upper")       # above the opening
-	side_auto(st, f, -1, -hw, 0, h, 0, "wall_lower", "wall_upper")       # left of it
-	side_auto(st, f, hw, 1, 0, h, 0, "wall_lower", "wall_upper")         # right of it
+	side_auto(st, f, -1, -hw, y0, h, 0, "wall_lower", "wall_upper")      # left of it
+	side_auto(st, f, hw, 1, y0, h, 0, "wall_lower", "wall_upper")        # right of it
+	side_auto(st, f, -1, 1, 0, y0, 0, "wall_lower", "wall_upper")        # below it (high mouths)
 	var zf := 1.0 - FD
-	for cp in [Vector2(-hw, 0), Vector2(hw, 0), Vector2(-hw, h), Vector2(hw, h)]:
+	if y0 > 0.0:   # sill of a high mouth
+		quad(st, Vector3(-hw, y0, zf), Vector3(hw, y0, zf), Vector3(hw, y0, -1), Vector3(-hw, y0, -1), Vector3.UP, floor_tile,
+			Vector2(0, 0), Vector2(hw, 0), Vector2(hw, 0.6), Vector2(0, 0.6))
+	for cp in [Vector2(-hw, y0), Vector2(hw, y0), Vector2(-hw, h), Vector2(hw, h)]:
 		var best := []
 		for p in sec:
 			best.append([(p as Vector2).distance_to(cp), p])
@@ -655,9 +660,9 @@ func wall_with_tube(st: SurfaceTool, sec: Array, hw: float, h: float, floor_tile
 			[Vector2(0, 0), Vector2(0.2, 0), Vector2(0.2, 0.2)])
 	tube_run(st, Vector3(0, 0, -1), -zf, 1.0, sec, floor_tile, wall_tile)
 
-func wall_tube_collision(hw: float, h: float) -> Array:
+func wall_tube_collision(hw: float, h: float, y0 := 0.0) -> Array:
 	var zf := 1.0 - FD
-	return (shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1))
+	return (shape_box(Vector3(-1, -0.5, -1), Vector3(1, 0, 1)) + (shape_box(Vector3(-hw, 0, -1), Vector3(hw, y0, zf)) if y0 > 0.0 else [])
 		+ shape_box(Vector3(-1, 0, -1), Vector3(-hw, 4, zf)) + shape_box(Vector3(hw, 0, -1), Vector3(1, 4, zf))
 		+ shape_box(Vector3(-hw, h, -1), Vector3(hw, 4, zf)))
 
@@ -670,6 +675,14 @@ func build_tubes() -> void:
 	st = new_st()
 	wall_with_tube(st, DUCT, 0.7, 1.2, "floor_metal", "vent")
 	add_item(lib_structure, "wall_duct", finish(st), wall_tube_collision(0.7, 1.2), "Wall face with a duct mouth at floor level; duct continues out of -Z")
+	# high ducts: same crawl duct with its floor 2 m up (mouths at ledge height)
+	var high := []
+	for p in DUCT:
+		high.append((p as Vector2) + Vector2(0, 1.8))
+	tube_family("hduct", high, 0.7, 3.0, "floor_metal", "vent", false, "Crawl duct 1.8 m up (reach it from a ledge), auto-joins", 1.8)
+	st = new_st()
+	wall_with_tube(st, high, 0.7, 3.0, "floor_metal", "vent", 1.8)
+	add_item(lib_structure, "wall_hduct", finish(st), wall_tube_collision(0.7, 3.0, 1.8), "Wall face with a high duct mouth (1.8 m up, ledge height); duct continues out of -Z")
 
 # ------------------------------------------------------------ upper floors ----
 func build_upper() -> void:
@@ -743,14 +756,27 @@ func build_rails_cover() -> void:
 		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
 			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
 	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -0.35), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
-	# ledge: a grated shelf along the +Z edge, 2 m up, to stand on under a ceiling grate
-	st = new_st()
-	box(st, Vector3(-1, 1.88, 0.05), Vector3(1, 2.0, 1.0), "beam", "floor_grate", "beam")
-	for lx in [-0.9, 0.9]:
-		box(st, Vector3(lx - 0.05, 0, 0.1), Vector3(lx + 0.05, 1.88, 0.2), "beam", "beam")
-		box(st, Vector3(lx - 0.04, 1.4, 0.2), Vector3(lx + 0.04, 1.48, 1.0), "beam", "beam")
-	box(st, Vector3(-1, 2.0, 0.05), Vector3(1, 2.06, 0.11), "hazard", "hazard")
-	add_item(lib_props, "ledge", finish(st), shape_box(Vector3(-1, 1.88, 0.05), Vector3(1, 2.0, 1.0)), "Shelf ledge 2 m up along the +Z edge (climb to a ceiling grate)")
+	# ledges: grated walkway 2 m up along the wall edges of a cell (edge masks like rails),
+	# reaching back to the wall face so there's no gap
+	var lnames := {1: "ledge", 3: "ledge_corner", 5: "ledge_both", 7: "ledge_u", 15: "ledge_ring"}
+	for mask in [1, 3, 5, 7, 15]:
+		st = new_st()
+		var lshapes := []
+		for i in 4:
+			if not mask & (1 << i):
+				continue
+			var d: Vector3 = DIRS[i]
+			var r := Vector3.UP.cross(d)
+			var a := r * -1.0 + d * -0.05
+			var b := r * 1.0 + d * 1.74
+			var lo := Vector3(minf(a.x, b.x), 1.68, minf(a.z, b.z))
+			var hi := Vector3(maxf(a.x, b.x), 1.8, maxf(a.z, b.z))
+			box(st, lo, hi, "beam", "floor_grate", "beam")
+			lshapes += shape_box(lo, hi)
+			for lx in [-0.85, 0.85]:
+				var p: Vector3 = r * lx + d * 0.05
+				box(st, Vector3(p.x - 0.05, 0, p.z - 0.05), Vector3(p.x + 0.05, 1.68, p.z + 0.05), "beam", "beam")
+		add_item(lib_props, lnames[mask], finish(st), lshapes, "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it")
 
 func build_device_meshes() -> void:
 	# ladder: rails + rungs, 5m tall, in the XY plane at z = 0

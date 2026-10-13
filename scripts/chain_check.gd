@@ -83,29 +83,63 @@ func _gates() -> void:
 	_check("keycard door prompt", _prompt() == "Crew keycard required" and kd.open_amount == 0.0, "'%s'" % _prompt())
 
 func _climb() -> void:
-	_put(13, 0, 11, 180, 0)
+	# storeroom: crate -> ledge -> high vent -> crouch duct -> drop into the riser -> ladder
+	_put(12, 0, 13, 135, 0)
 	await _wait(0.3)
-	_pop_grate_near(_pos(13, 1, 13))
 	await _cap("storeroom")
 	p.intent.move = Vector2(0, -1)
-	await _wait(0.15)
+	await _wait(0.1)
+	p.intent.jump = true
+	await _wait(0.7)
+	var y_crate := p.global_position.y
+	_check("jump onto the crate", y_crate > 1.1, "y %.2f" % y_crate)
 	p.intent.jump = true
 	await _wait(0.9)
-	var y_crate := p.global_position.y
-	_check("jump onto the crate (or the ladder)", y_crate > 1.1, "y %.2f" % y_crate)
-	await _wait(2.5)
+	p.intent.move = Vector2.ZERO
+	await _wait(0.3)
+	var y_ledge := p.global_position.y
+	_check("jump up onto the ledge", y_ledge > 1.5, "y %.2f" % y_ledge)
+	await _cap("on_ledge")
+	# walk the ledge to the vent (teleport along it)
+	p.global_position = _pos(15, 0, 11) + Vector3(0.3, 1.85, 0)
+	p.velocity = Vector3.ZERO
+	p.rotation.y = deg_to_rad(-90)
+	p.head.rotation.x = 0
+	await _wait(0.4)
+	_check("standing on the ledge by the vent", p.global_position.y > 1.7 and p.is_on_floor(), "y %.2f" % p.global_position.y)
+	_pop_cover_near(_pos(16, 0, 11) + Vector3(0, 2.4, 0))
+	_pop_cover_near(_pos(19, 0, 11) + Vector3(0, 2.4, 0))
+	await _wait(0.3)
+	await _cap("vent_open")
+	p.intent.crouch = true
+	await _wait(0.3)
+	await _move(Vector2(0, -1), 4.5)
+	p.intent.crouch = false
+	await _wait(0.8)
+	await _cap("riser")
+	var rc := level.cell_of(p.global_position)
+	_check("crawl the high duct and drop into the riser", rc.x >= 20 and rc.x <= 21 and p.global_position.y < 0.5, "cell %s y %.2f" % [rc, p.global_position.y])
+	_put(20, 0, 12, 180, 10)
+	p.intent.move = Vector2(0, -1)
+	await _wait(2.6)
 	p.intent.move = Vector2.ZERO
 	await _wait(0.5)
 	await _cap("roomA")
-	var y := p.global_position.y
-	_check("ledge ladder up through the grate", y > 3.9 and p.is_on_floor(), "y %.2f cell %s" % [y, level.cell_of(p.global_position)])
+	_check("hidden ladder up into maintenance", p.global_position.y > 3.9 and p.is_on_floor(), "y %.2f" % p.global_position.y)
 
 func _shaft() -> void:
-	_put(14, 1, 14, 0, 0)
-	await _move(Vector2(0, -1), 5.0)
-	await _cap("roomC")
+	_put(21, 1, 11, 0, 0)
+	await _move(Vector2(0, -1), 4.5)
 	var z := p.global_position.z
-	_check("maintenance shaft to room C", z < _pos(14, 1, 5).z + 1.0, "z %.2f" % z)
+	_check("maintenance shaft to room C", z < _pos(21, 1, 5).z, "z %.2f" % z)
+	_put(20, 1, 4, 90, 0)
+	await _move(Vector2(0, -1), 6.0)
+	await _cap("crawlway")
+	var x := p.global_position.x
+	_check("crawlway west to room B", x < _pos(11, 1, 4).x, "x %.2f" % x)
+
+func _pop_cover_near(at: Vector3) -> void:
+	_pop_grate_near(at)
 
 func _drop() -> void:
 	_put(6, 1, 5, -90, -40)

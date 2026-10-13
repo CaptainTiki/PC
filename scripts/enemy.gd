@@ -74,7 +74,9 @@ func _physics_process(delta: float) -> void:
 			_set_frame(_idle_frame())
 			_steer(delta, dist)
 			attack_t -= delta
-			var in_reach := dist < data.melee_range if data.attack == "melee" else sees
+			# melee needs the player in the open: no glass, door or floor in between
+			var dy := absf(target.global_position.y - global_position.y)
+			var in_reach := (dist < data.melee_range and sees and dy < 1.6) if data.attack == "melee" else sees
 			if attack_t <= 0.0 and in_reach:
 				_enter(State.WINDUP)
 		State.WINDUP:
@@ -212,7 +214,7 @@ func _steer(delta: float, dist: float, speed_scale := 1.0) -> void:
 func _lunge(dist: float) -> void:
 	var dir := _flat(target.global_position - global_position).normalized()
 	velocity = dir * data.lunge_speed + Vector3(0, 2.5, 0)
-	if dist < data.melee_range + 0.5 and target.has_method("take_hit"):
+	if dist < data.melee_range + 0.5 and _can_see() and absf(target.global_position.y - global_position.y) < 1.6 and target.has_method("take_hit"):
 		target.take_hit(data.melee_damage, global_position, dir, self)
 
 func _fire() -> void:

@@ -83,7 +83,27 @@
   {
    "id": 16,
    "name": "ledge",
-   "note": "Shelf ledge 2 m up along the +Z edge (climb to a ceiling grate)"
+   "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
+  },
+  {
+   "id": 17,
+   "name": "ledge_corner",
+   "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
+  },
+  {
+   "id": 18,
+   "name": "ledge_both",
+   "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
+  },
+  {
+   "id": 19,
+   "name": "ledge_u",
+   "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
+  },
+  {
+   "id": 20,
+   "name": "ledge_ring",
+   "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   }
  ],
  "structure": [
@@ -369,11 +389,41 @@
   },
   {
    "id": 56,
+   "name": "hduct_end",
+   "note": "Crawl duct 1.8 m up (reach it from a ledge), auto-joins"
+  },
+  {
+   "id": 57,
+   "name": "hduct_corner",
+   "note": "Crawl duct 1.8 m up (reach it from a ledge), auto-joins"
+  },
+  {
+   "id": 58,
+   "name": "hduct",
+   "note": "Crawl duct 1.8 m up (reach it from a ledge), auto-joins"
+  },
+  {
+   "id": 59,
+   "name": "hduct_t",
+   "note": "Crawl duct 1.8 m up (reach it from a ledge), auto-joins"
+  },
+  {
+   "id": 60,
+   "name": "hduct_cross",
+   "note": "Crawl duct 1.8 m up (reach it from a ledge), auto-joins"
+  },
+  {
+   "id": 61,
+   "name": "wall_hduct",
+   "note": "Wall face with a high duct mouth (1.8 m up, ledge height); duct continues out of -Z"
+  },
+  {
+   "id": 62,
    "name": "catwalk",
    "note": "Catwalk grating over open air (ceiling above)"
   },
   {
-   "id": 57,
+   "id": 63,
    "name": "wall_glass",
    "note": "Interior window wall between two rooms (needs open space on +Z and -Z)"
   }
