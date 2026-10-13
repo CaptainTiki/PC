@@ -44,6 +44,8 @@ func _ready() -> void:
 		_capture.call_deferred()
 	elif "--playtest" in args:
 		add_child(Playtest.new())   # dev tooling only
+	elif "--topdown" in args:
+		add_child(preload("res://scripts/top_down.gd").new())
 	elif "--flashcheck" in args:
 		add_child(preload("res://scripts/flash_check.gd").new())
 	elif "--vmcheck" in args:

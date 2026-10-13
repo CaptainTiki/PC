@@ -56,4 +56,6 @@ lights, patchy trim) and `[shots]` screenshot markers.
 - `-- --capture`  screenshot every Marker3D in group "shots"
 - `-- --playtest` bot plays the level (walk in, aim, fire), captures key moments to shots/play_*.png + play_log.txt
 - `-- --vmcheck`  fire once and capture the viewmodel frames
+- `-- --topdown`  orthographic plan of the level from straight above -> shots/<level>_topdown.png
+- `-- --flashcheck` every shot marker with the flashlight off and on
 - `python3 tools/gen_sprites.py` regenerates enemy sprite sheets
