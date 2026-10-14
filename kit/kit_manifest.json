@@ -77,13 +77,13 @@
   },
   {
    "id": 15,
-   "name": "strip_fill",
-   "note": "Collision only: fills the gutter strip on the +Z side of a wall cell (behind desks/consoles)"
+   "name": "console_desk",
+   "note": "Console desk along X, screens face +Z (free-standing: keep a cell clear of walls)"
   },
   {
    "id": 16,
-   "name": "console_desk",
-   "note": "Console desk along X, screens face +Z"
+   "name": "console_desk_wall",
+   "note": "Console desk backed flush against the wall face on its -Z side"
   },
   {
    "id": 17,

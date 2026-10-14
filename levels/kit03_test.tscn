@@ -77,9 +77,6 @@ mesh_library = ExtResource("4_irgg7")
 cell_size = Vector3(2, 4, 2)
 cell_octant_size = 2
 cell_center_y = false
-data = {
-"cells": PackedInt32Array(65559, 14, 655375)
-}
 
 [node name="Clutter" type="Node3D" parent="."]
 
@@ -219,7 +216,7 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 57.2
 script = ExtResource("15_njlqq")
 
 [node name="LockdownConsole" type="StaticBody3D" parent="Devices" instance=ExtResource("18_bgjmu")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 47, 4, 27.7)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 47, 4, 28.45)
 collision_layer = 17
 script = ExtResource("17_f1jrf")
 targets = Array[Vector3i]([Vector3i(36, 1, 8), Vector3i(36, 1, 9)])

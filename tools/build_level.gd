@@ -29,7 +29,7 @@ extends SceneTree
 ##           shoot off)
 ##   props   o  pillar   -  ceiling beam   +  beam crossing   t  cable tray (auto-joins)
 ##           p  vertical pipes (against the nearest wall)
-##           n  waist-high cover (joins into runs)   j  console desk (back to the nearest wall)
+##           n  waist-high cover (joins into runs)   j  console desk: flush against the wall behind it, or free-standing (keep a cell clear of walls; never in a corner)
 ##   clutter x  crate    X  crate stack    b  explosive canister    (free-placed scenes)
 ##   actors  @  player start   e  Drifter   s  Skitter
 ##   items   h  health   a  energy cells   E  section exit
@@ -695,13 +695,6 @@ func _init() -> void:
 							push_warning("prop '%s' at %d,%d floor %d replaced by a railing" % [s, c, r, f])
 						if s != "k" and s != "l" and not "xXhaEb@es".contains(s):
 							continue
-				# wall-hugging props: fill the gutter strip in the wall cells around them
-				if "jyp".contains(s):
-					for i in 4:
-						var d: Vector2i = MDIRS[i]
-						var wc := Vector3i(c + d.x, f, r + d.y)
-						if is_wall(ch(f, wc.x, wc.z)) and props.get_cell_item(wc) == GridMap.INVALID_CELL_ITEM:
-							props.set_cell_item(wc, pid["strip_fill"], orient_k((i + 2) % 4, props))
 				# props / clutter / actors
 				match s:
 					"o":
@@ -748,8 +741,17 @@ func _init() -> void:
 							var cz := place(scenes["x"], pos + Vector3(dv.x, 0, dv.y) * 0.72)
 							cz.rotation.y = deg_to_rad(6.0)
 					"j":
+						# a desk either sits flush against the wall behind it (no slot to get
+						# shoved into) or stands free with a clear cell on every side
 						var wi := wall_dir(f, c, r)
-						props.set_cell_item(cell, pid["console_desk"], orient_k((wi + 2) % 4, props) if wi >= 0 else 0)
+						if wi >= 0:
+							for k in [1, 3]:
+								var d2: Vector2i = MDIRS[(wi + k) % 4]
+								if is_wall(ch(f, c + d2.x, r + d2.y)):
+									push_warning("wall desk 'j' at %d,%d floor %d has a wall at its end: 0.8 m slot" % [c, r, f])
+							props.set_cell_item(cell, pid["console_desk_wall"], orient_k((wi + 2) % 4, props))
+						else:
+							props.set_cell_item(cell, pid["console_desk"], 0)
 					"k":
 						var wi := wall_dir(f, c, r)
 						var d: Vector2i = MDIRS[maxi(wi, 0)]
@@ -769,8 +771,13 @@ func _init() -> void:
 					"y":
 						var wi := wall_dir(f, c, r)
 						var dy: Vector2i = MDIRS[wi] if wi >= 0 else Vector2i.ZERO
-						# back against the wall so there's no pocket to get shoved into behind it
-						var sw := place(console_scene, pos + Vector3(dy.x, 0, dy.y) * 0.7, (wi + 2) % 4 if wi >= 0 else 0, devices) as Switch
+						# back flush on the wall face so there's no slot to get shoved into behind it
+						if wi >= 0:
+							for k in [1, 3]:
+								var d2: Vector2i = MDIRS[(wi + k) % 4]
+								if is_wall(ch(f, c + d2.x, r + d2.y)):
+									push_warning("console 'y' at %d,%d floor %d has a wall at its end: narrow slot" % [c, r, f])
+						var sw := place(console_scene, pos + Vector3(dy.x, 0, dy.y) * 1.45, (wi + 2) % 4 if wi >= 0 else 0, devices) as Switch
 						sw.name = "LockdownConsole"
 						switches[cell] = sw
 					"x", "X":

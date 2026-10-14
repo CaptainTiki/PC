@@ -746,21 +746,15 @@ func build_rails_cover() -> void:
 	var st := new_st()
 	box(st, Vector3(-1, 0, -0.2), Vector3(1, 1.05, 0.2), "wall_lower", "hazard")
 	add_item(lib_props, "cover", finish(st), shape_box(Vector3(-1, 0, -0.2), Vector3(1, 1.05, 0.2)), "Waist-high cover barrier along X")
-	# console desk along X, screens facing +Z
-	st = new_st()
-	box(st, Vector3(-0.95, 0, -0.35), Vector3(0.95, 0.9, 0.35), "kick", "trim")
-	for sx in [-0.5, 0.5]:
-		var a: Vector3 = Vector3(sx - 0.4, 0.95, -0.25)
-		quad(st, a, a + Vector3(0.8, 0, 0), a + Vector3(0.8, 0.45, -0.1), a + Vector3(0, 0.45, -0.1), Vector3(0, 0.2, 1).normalized(), "console",
-			Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
-		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
-			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
-	# invisible filler: the 0.75 m floor strip between a wall's face and its cell edge,
-	# painted into wall cells behind wall-hugging props so there's no slot to get wedged in
-	st = new_st()
-	add_item(lib_props, "strip_fill", finish_empty(st), shape_box(Vector3(-1, 0, 0.2), Vector3(1, 3.0, 1.0)), "Collision only: fills the gutter strip on the +Z side of a wall cell (behind desks/consoles)")
-	st = new_st()
-	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -1.0), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
+	# console desks: a free-standing one (keep it a cell away from walls) and a wall one
+	# whose back sits on the wall face of the cell behind it (-Z), so there's no slot
+	# behind it to get shoved into. Collision matches the mesh.
+	for spec in [["console_desk", 0.0, "Console desk along X, screens face +Z (free-standing: keep a cell clear of walls)"],
+			["console_desk_wall", -1.4, "Console desk backed flush against the wall face on its -Z side"]]:
+		st = new_st()
+		var zo: float = spec[1]
+		desk_mesh(st, zo)
+		add_item(lib_props, spec[0], finish(st), shape_box(Vector3(-0.95, 0, -0.35 + zo), Vector3(0.95, 1.4, 0.35 + zo)), spec[2])
 	# ledges: grated walkway 2 m up along the wall edges of a cell (edge masks like rails),
 	# reaching back to the wall face so there's no gap
 	var lnames := {1: "ledge", 3: "ledge_corner", 5: "ledge_both", 7: "ledge_u", 15: "ledge_ring"}
@@ -929,6 +923,17 @@ func tray_mesh(st: SurfaceTool, arms: int) -> void:
 	# hanger rods at the centre
 	for sgn in [-1.0, 1.0]:
 		box(st, Vector3(-0.02 + sgn * 0.33, TRAY_Y, -0.02), Vector3(0.02 + sgn * 0.33, 4.0, 0.02), "trim", "trim")
+
+## Console desk along X, screens facing +Z, the whole desk shifted by zo in Z.
+## For the wall variant the back (-0.35 + zo = -1.75) lands on the wall face.
+func desk_mesh(st: SurfaceTool, zo: float) -> void:
+	box(st, Vector3(-0.95, 0, -0.35 + zo), Vector3(0.95, 0.9, 0.35 + zo), "kick", "trim")
+	for sx in [-0.5, 0.5]:
+		var a: Vector3 = Vector3(sx - 0.4, 0.95, -0.25 + zo)
+		quad(st, a, a + Vector3(0.8, 0, 0), a + Vector3(0.8, 0.45, -0.1), a + Vector3(0, 0.45, -0.1), Vector3(0, 0.2, 1).normalized(), "console",
+			Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
+		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
+			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
 
 func build_props() -> void:
 	# cable tray: every rotation-unique arm combination (end, straight, corner, T, cross)

@@ -25,8 +25,8 @@ put(1, 8, 22, 'V'); put(1, 21, 22, 'V')
 room(1, 7, 15, 11, 18)                       # command room A
 for x in (7, 8, 9): put(1, x, 19, 'g')
 put(1, 10, 19, 'D')
-put(1, 9, 15, 'r'); put(1, 7, 15, 'j'); put(1, 11, 15, 'j'); put(1, 11, 17, 'j'); put(1, 7, 17, 'j')
-put(1, 9, 17, '*'); put(1, 8, 16, 's'); put(1, 10, 16, 's'); put(1, 8, 18, 's'); put(1, 10, 18, 's')
+put(1, 9, 15, 'r'); put(1, 8, 15, 'j'); put(1, 10, 15, 'j'); put(1, 9, 17, 'j')   # wall desks flank the panel, one free desk mid-room
+put(1, 9, 16, '*'); put(1, 8, 16, 's'); put(1, 10, 16, 's'); put(1, 8, 18, 's'); put(1, 10, 18, 's')
 put(1, 9, 14, 'K')
 rooms += ["room cabin 4 19 s 1", "room cabin 14 19 s 1", "room cabin 20 19 s 1",
           "room cabin 5 22 n 1", "room cabin 11 22 n 1"]
