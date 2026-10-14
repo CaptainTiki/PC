@@ -1,0 +1,32 @@
+; Crew quarters: 5x4 interior with a partition you have to walk round, door at the
+; bottom centre (stamped facing n/e/s/w). The bunk (n stand-in) and locker (x) sit
+; on the far side of the partition; $ = loot roll (health / cells / nothing), & =
+; maybe a skitter. Nothing in here is visible from the doorway.
+[bunk_left]
+#######
+#n.#..#
+#$.#.x#
+#..#..#
+#....*#
+###D###
+[bunk_right]
+#######
+#..#.n#
+#x.#.$#
+#..#..#
+#*....#
+###D###
+[split]
+#######
+#n.#$.#
+#..#..#
+#x.#&x#
+#.....#
+###D###
+[trashed]
+#######
+#n.#.X#
+#$.#..#
+#...#x#
+#..&..#
+###D###
