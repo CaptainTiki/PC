@@ -44,6 +44,9 @@ func _ready() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud.set_health(health, max_health)
 	weapon.ammo_changed.connect(hud.set_ammo)
+	weapon.switched.connect(hud.set_weapon)
+	hud.set_weapon(weapon.data)
+	weapon.fired.connect(func(): get_tree().call_group("enemies", "hear", global_position))
 	hud.set_ammo(weapon.ammo, weapon.data.max_ammo)
 
 func _physics_process(delta: float) -> void:
@@ -53,6 +56,13 @@ func _physics_process(delta: float) -> void:
 		return
 	if intent.consume_flashlight():
 		toggle_flashlight()
+	var ws := intent.consume_weapon()
+	if ws == -2:
+		weapon.switch_to((weapon.slot + 1) % weapon.slots.size())
+	elif ws == -3:
+		weapon.switch_to((weapon.slot - 1 + weapon.slots.size()) % weapon.slots.size())
+	elif ws >= 0:
+		weapon.switch_to(ws)
 	_update_use()
 	_update_crouch(delta)
 	var l := intent.consume_look()

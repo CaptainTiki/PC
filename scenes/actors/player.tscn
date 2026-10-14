@@ -1,13 +1,15 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/player_input.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/weapon.gd" id="3"]
 [ext_resource type="Resource" path="res://data/scattergun.tres" id="4"]
+[ext_resource type="Resource" path="res://data/pistol.tres" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/fx/impact_spark.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/fx/tracer.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7"]
 [ext_resource type="Shader" path="res://art/shaders/glow.gdshader" id="8"]
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="10"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 resource_local_to_scene = true
@@ -49,6 +51,7 @@ fov = 85.0
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 script = ExtResource("3")
 data = ExtResource("4")
+slots = Array[ExtResource("10")]([ExtResource("4"), ExtResource("9")])
 impact_fx = ExtResource("5")
 tracer_fx = ExtResource("6")
 

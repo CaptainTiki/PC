@@ -1069,6 +1069,15 @@ func _init() -> void:
 	box(g, Vector3(-0.025, 0.07, -0.05), Vector3(0.025, 0.1, 0.15), "trim", "trim", "trim")           # top rail
 	glow_box(g, Vector3(0.065, -0.04, 0.0), Vector3(0.088, 0.035, 0.14))                            # side cell
 	ResourceSaver.save(finish(g), "res://kit/scattergun.res")
+	# ---- sidearm viewmodel: slim single barrel, amber cell ----
+	var sg := new_st()
+	box(sg, Vector3(-0.053, -0.063, -0.056), Vector3(0.053, 0.063, 0.168), "beam", "trim", "trim")        # frame
+	box(sg, Vector3(-0.042, -0.042, -0.364), Vector3(0.042, 0.056, -0.056), "wall_lower", "trim", "trim")      # slide
+	box(sg, Vector3(-0.022, -0.017, -0.42), Vector3(0.022, 0.028, -0.364), "kick", "kick", "kick")          # barrel
+	box(sg, Vector3(-0.042, -0.238, 0.056), Vector3(0.042, -0.063, 0.168), "kick", "kick", "kick")            # grip
+	box(sg, Vector3(-0.017, 0.063, -0.28), Vector3(0.017, 0.091, -0.238), "trim", "trim", "trim")          # sight
+	glow_box(sg, Vector3(-0.048, -0.028, -0.224), Vector3(0.048, 0.035, -0.14), "warning_lamp", Vector2(0.47, 0.47), Vector2(0.53, 0.53))  # cell
+	ResourceSaver.save(finish(sg), "res://kit/pistol.res")
 	ResourceSaver.save(lib_structure, "res://kit/structure.meshlib.res")
 	ResourceSaver.save(lib_trim, "res://kit/trim.meshlib.res")
 	ResourceSaver.save(lib_props, "res://kit/props.meshlib.res")

@@ -4,9 +4,14 @@ extends CharacterBody3D
 ##   fly + ranged  (Drifter): hovers, keeps its preferred range, lobs slow orbs
 ##   ground + melee (Skitter): scuttles straight in, lunges, comes in packs
 ## Out of sight it follows the Level's grid flow field toward the player.
+## Awareness: IDLE until it has had the player in clear sight long enough
+## (instant up close, notice_time at wake_range), got shot, heard the gun
+## nearby, or an ally it can see woke up. NOTICE is a short twitch before it
+## moves. Lose sight for lose_time and it walks to where it last saw you,
+## then goes dormant again.
 ## All damage arrives through take_hit().
 
-enum State { IDLE, CHASE, WINDUP, PAIN, DEAD }
+enum State { IDLE, NOTICE, CHASE, WINDUP, PAIN, DEAD }
 
 const MASK_WORLD := 1
 
@@ -38,6 +43,9 @@ var sees := false
 var blocked_t := 0.0
 var unstick_t := 0.0
 var unstick_dir := Vector3.ZERO
+var suspicion := 0.0
+var last_seen := Vector3.ZERO
+var unseen_t := 0.0
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -49,6 +57,8 @@ func _ready() -> void:
 	anim_t = rng.randf() * 4.0
 	strafe_dir = 1.0 if rng.randf() < 0.5 else -1.0
 	level = owner as Level
+	if level == null:
+		level = get_tree().current_scene as Level
 
 func _physics_process(delta: float) -> void:
 	state_t += delta
@@ -68,10 +78,34 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			_set_frame(_idle_frame())
 			_gravity(delta)
-			if dist < data.wake_range and sees:
+			move_and_slide()
+			# suspicion builds while the player is in clear sight, faster the closer they are
+			if sees and dist < data.wake_range:
+				var closeness := 1.0 - clampf(dist / data.wake_range, 0.0, 1.0)
+				suspicion += delta * (1.0 / maxf(data.notice_time, 0.05)) * (1.0 + closeness * 6.0)
+				if dist < 4.0:
+					suspicion = 1.0
+			else:
+				suspicion = maxf(0.0, suspicion - delta * 0.5)
+			if suspicion >= 1.0:
 				wake()
+		State.NOTICE:
+			_set_frame(_idle_frame())
+			velocity = velocity.move_toward(Vector3(0, velocity.y, 0), 20.0 * delta)
+			_gravity(delta)
+			move_and_slide()
+			if state_t >= data.notice_delay:
+				_enter(State.CHASE)
 		State.CHASE:
 			_set_frame(_idle_frame())
+			if sees:
+				last_seen = target.global_position
+				unseen_t = 0.0
+			else:
+				unseen_t += delta
+				if unseen_t > data.lose_time and _flat(last_seen - global_position).length() < 2.5:
+					_go_dormant()
+					return
 			_steer(delta, dist)
 			attack_t -= delta
 			# melee needs the player in the open: no glass, door or floor in between
@@ -121,18 +155,36 @@ func _enter(s: State) -> void:
 	state = s
 	state_t = 0.0
 
-## Wake up (seen the player, got shot, or alerted by an ally).
-func wake(alert_others := true) -> void:
+## Wake up (noticed the player, got shot, heard the gun, or an ally it can see woke).
+## `instant` skips the notice twitch (being shot does that).
+func wake(alert_others := true, instant := false) -> void:
 	if state != State.IDLE:
 		return
+	suspicion = 1.0
 	attack_t = maxf(attack_t, data.notice_delay)
 	flash = 0.35
-	_enter(State.CHASE)
+	last_seen = target.global_position if target else global_position
+	unseen_t = 0.0
+	_enter(State.CHASE if instant else State.NOTICE)
 	if alert_others:
 		for n in get_tree().get_nodes_in_group("enemies"):
 			var e := n as Enemy
-			if e and e != self and e.state == State.IDLE and e.global_position.distance_to(global_position) < data.alert_radius:
+			if e and e != self and e.state == State.IDLE and e.global_position.distance_to(global_position) < data.alert_radius and _can_see_point(e.eye.global_position):
 				e.wake(false)
+
+## Heard a gunshot at `at` (Player calls this through the "enemies" group).
+func hear(at: Vector3) -> void:
+	if state == State.IDLE and at.distance_to(global_position) < data.hear_radius:
+		wake(false)
+
+func _go_dormant() -> void:
+	suspicion = 0.0
+	velocity = Vector3(0, velocity.y, 0)
+	_enter(State.IDLE)
+
+func _can_see_point(p: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(eye.global_position, p, MASK_WORLD)
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 func _set_frame(f: int) -> void:
 	if mat:
@@ -164,11 +216,13 @@ func _seek_dir() -> Vector3:
 	var to := _flat(target.global_position - global_position)
 	if sees or level == null:
 		return to.normalized()
-	var d := level.flow_dir(global_position, target.global_position)
-	return d if d != Vector3.ZERO else to.normalized()
+	var d := level.flow_dir(global_position, last_seen)
+	return d if d != Vector3.ZERO else _flat(last_seen - global_position).normalized()
 
 func _steer(delta: float, dist: float, speed_scale := 1.0) -> void:
 	var fwd := _seek_dir()
+	if not sees and _flat(last_seen - global_position).length() < 1.5:
+		fwd = Vector3.ZERO   # reached where it last saw the player: wait and listen
 	var want := Vector3.ZERO
 	if data.attack == "melee":
 		want = fwd * data.move_speed
@@ -235,8 +289,9 @@ func take_hit(amount: float, _point: Vector3, dir: Vector3, _source: Node) -> vo
 	if health <= 0.0:
 		_die()
 		return
-	if state == State.IDLE:
-		wake()
+	if state == State.IDLE or state == State.NOTICE:
+		state = State.IDLE
+		wake(true, true)
 	elif state != State.WINDUP and rng.randf() < data.pain_chance:
 		_enter(State.PAIN)
 

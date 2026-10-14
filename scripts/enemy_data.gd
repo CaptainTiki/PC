@@ -21,6 +21,12 @@ extends Resource
 @export var lunge_speed := 9.0
 ## after first noticing the player, wait this long before the first attack
 @export var notice_delay := 0.8
+## seconds of clear sight at wake_range before it notices (instant up close)
+@export var notice_time := 1.2
+## radius it hears the player's gun from, through walls
+@export var hear_radius := 9.0
+## seconds without a sighting before it gives up the chase and goes dormant
+@export var lose_time := 7.0
 ## waking up alerts idle allies within this radius
 @export var alert_radius := 10.0
 @export var death_fx: PackedScene

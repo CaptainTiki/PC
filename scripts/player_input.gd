@@ -9,6 +9,7 @@ var move := Vector2.ZERO       # x = strafe, y = forward(-)/back(+)
 var look := Vector2.ZERO       # radians this frame (yaw, pitch)
 var fire := false
 var flashlight := false   # true for one frame when toggled
+var weapon_slot := -1     # slot asked for this frame (-1 none); -2 next, -3 previous
 var use := false          # true for one frame when pressed
 var crouch := false       # held
 var jump := false         # true for one frame when pressed
@@ -36,6 +37,14 @@ func _process(_d: float) -> void:
 	crouch = Input.is_action_pressed("crouch")
 	if Input.is_action_just_pressed("jump"):
 		jump = true
+	if Input.is_action_just_pressed("weapon_1"):
+		weapon_slot = 0
+	elif Input.is_action_just_pressed("weapon_2"):
+		weapon_slot = 1
+	elif Input.is_action_just_pressed("weapon_next"):
+		weapon_slot = -2
+	elif Input.is_action_just_pressed("weapon_prev"):
+		weapon_slot = -3
 
 func consume_look() -> Vector2:
 	var l := look
@@ -51,6 +60,11 @@ func consume_use() -> bool:
 	var u := use
 	use = false
 	return u
+
+func consume_weapon() -> int:
+	var w := weapon_slot
+	weapon_slot = -1
+	return w
 
 func consume_jump() -> bool:
 	var j := jump

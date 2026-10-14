@@ -99,14 +99,23 @@ lit), `closet` (shelves, mop).
   template cabins/closet.
 
 ## Gameplay (vertical slice core)
-- Controls: WASD move, mouse look, LMB fire, Space jump, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
+- Controls: WASD move, mouse look, LMB fire, 1/2 or wheel/Q swap weapon, Space jump, E use, C / Ctrl crouch (hold), F flashlight, Esc release mouse.
 - Use: look at a usable thing (anything with `interact()` / `prompt()`) within 2.6m; the HUD shows `[E] prompt`.
 - Ladders: push forward to climb, back to descend (or forward while looking down).
 - `Player` (scenes/actors/player.tscn) — reads `PlayerInput` intent only; damage via `take_hit()`.
-- `Weapon` + `WeaponData` (data/scattergun.tres) — hitscan pellets, tracers, impact FX.
+- `Weapon` + `WeaponData` — hitscan pellets, tracers, impact FX. `Weapon.slots` holds every
+  weapon carried, ammo kept per weapon; cells pickups feed the first weapon that uses ammo.
+  - Arc Scattergun (data/scattergun.tres): 9 pellets, 0.75 s, runs on cells.
+  - Sidearm (data/pistol.tres): single accurate shot, 0.26 s, no ammo — for picking at
+    things from a ladder or down a corridor.
 - `Enemy` + `EnemyData` — flat billboard sprites (art/sprites); `take_hit()` chokepoint.
   - Drifter (data/drifter.tres): flies, keeps range, fires slow orbs.
   - Skitter (data/skitter.tres): ground pack melee, lunges, alerts nearby allies.
+  - Awareness: dormant until the player has been in clear sight long enough (instant
+    up close, `notice_time` at `wake_range`), they get shot, they hear the gun within
+    `hear_radius` (through walls), or an ally *they can see* wakes. A short notice twitch
+    before they move. Lose sight for `lose_time` and they walk to where they last saw
+    you, then go dormant again.
   - Out of sight, enemies follow the Level's grid flow field (round corners, through
     doors, up and down stairs; they don't use ladders, ducts or elevators). Fliers
     hover above whatever floor is under them.
@@ -118,10 +127,11 @@ lit), `closet` (shelves, mop).
 ## Dev tooling
 - `-- --capture`  screenshot every Marker3D in group "shots"
 - `-- --playtest` bot plays the level (walk in, aim, fire), captures key moments to shots/play_*.png + play_log.txt
-- `-- --vmcheck`  fire once and capture the viewmodel frames
+- `-- --vmcheck`  fire once and capture the viewmodel frames, then swap to the sidearm and fire it
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
 - `-- --peek c f r yaw pitch [open] ...` drop the player at grid cells (flashlight on, enemies gone) and capture shots/peek_<n>.png; `open` opens every door for that shot
+- `-- --awarecheck` enemy awareness rules on deck03: dormant behind doors, slow notice at range, instant close/shot, hearing, giving up
 - `-- --deckcheck` scripted walk of deck03's three chains with teleports between steps (28 checks, shots/deck_*.png)
 - `-- --chaincheck` scripted run of the mini chain in chain_test: one-way door, seal, crate jump + ledge ladder through a grate, shaft, grate drop, release, keycard
 - `-- --doorcheck` scripted checks in kit03_test: every door state, the switches, and the duct -> riser -> ladder -> maintenance -> closet detour

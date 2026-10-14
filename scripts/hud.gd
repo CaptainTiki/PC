@@ -14,8 +14,11 @@ func set_health(h: float, _max_h: float) -> void:
 	health_label.text = str(int(ceil(h)))
 	health_label.modulate = Color(1, 0.35, 0.3) if h <= 25.0 else Color.WHITE
 
-func set_ammo(a: int, _max_a: int) -> void:
-	ammo_label.text = str(a)
+func set_ammo(a: int, max_a: int) -> void:
+	ammo_label.text = str(a) if max_a > 0 else "--"
+
+func set_weapon(d: WeaponData) -> void:
+	$Ammo/Caption.text = "CELLS" if d.ammo_per_shot > 0 else d.display_name.to_upper()
 
 func flash_damage(strength: float) -> void:
 	damage_flash.color.a = 0.45 * strength
