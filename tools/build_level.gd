@@ -695,6 +695,13 @@ func _init() -> void:
 							push_warning("prop '%s' at %d,%d floor %d replaced by a railing" % [s, c, r, f])
 						if s != "k" and s != "l" and not "xXhaEb@es".contains(s):
 							continue
+				# wall-hugging props: fill the gutter strip in the wall cells around them
+				if "jyp".contains(s):
+					for i in 4:
+						var d: Vector2i = MDIRS[i]
+						var wc := Vector3i(c + d.x, f, r + d.y)
+						if is_wall(ch(f, wc.x, wc.z)) and props.get_cell_item(wc) == GridMap.INVALID_CELL_ITEM:
+							props.set_cell_item(wc, pid["strip_fill"], orient_k((i + 2) % 4, props))
 				# props / clutter / actors
 				match s:
 					"o":

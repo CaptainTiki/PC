@@ -77,31 +77,36 @@
   },
   {
    "id": 15,
+   "name": "strip_fill",
+   "note": "Collision only: fills the gutter strip on the +Z side of a wall cell (behind desks/consoles)"
+  },
+  {
+   "id": 16,
    "name": "console_desk",
    "note": "Console desk along X, screens face +Z"
   },
   {
-   "id": 16,
+   "id": 17,
    "name": "ledge",
    "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   },
   {
-   "id": 17,
+   "id": 18,
    "name": "ledge_corner",
    "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   },
   {
-   "id": 18,
+   "id": 19,
    "name": "ledge_both",
    "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   },
   {
-   "id": 19,
+   "id": 20,
    "name": "ledge_u",
    "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   },
   {
-   "id": 20,
+   "id": 21,
    "name": "ledge_ring",
    "note": "Walkway ledge 1.8 m up along the cell's wall edge(s), reach high ducts from it"
   }

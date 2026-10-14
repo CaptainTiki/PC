@@ -755,6 +755,11 @@ func build_rails_cover() -> void:
 			Vector2(0.1, 0.4), Vector2(0.9, 0.4), Vector2(0.9, 0.9), Vector2(0.1, 0.9))
 		quad(st, a + Vector3(0.8, 0, -0.02), a + Vector3(0, 0, -0.02), a + Vector3(0, 0.45, -0.12), a + Vector3(0.8, 0.45, -0.12), Vector3(0, -0.2, -1).normalized(), "trim",
 			Vector2(0, 0), Vector2(0.4, 0), Vector2(0.4, 0.25), Vector2(0, 0.25))
+	# invisible filler: the 0.75 m floor strip between a wall's face and its cell edge,
+	# painted into wall cells behind wall-hugging props so there's no slot to get wedged in
+	st = new_st()
+	add_item(lib_props, "strip_fill", finish_empty(st), shape_box(Vector3(-1, 0, 0.2), Vector3(1, 3.0, 1.0)), "Collision only: fills the gutter strip on the +Z side of a wall cell (behind desks/consoles)")
+	st = new_st()
 	add_item(lib_props, "console_desk", finish(st), shape_box(Vector3(-0.95, 0, -1.0), Vector3(0.95, 1.4, 0.35)), "Console desk along X, screens face +Z")
 	# ledges: grated walkway 2 m up along the wall edges of a cell (edge masks like rails),
 	# reaching back to the wall face so there's no gap

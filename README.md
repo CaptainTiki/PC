@@ -130,6 +130,7 @@ lit), `closet` (shelves, mop).
 - `-- --vmcheck`  fire once and capture the viewmodel frames, then swap to the sidearm and fire it
 - `-- --topdown`  orthographic plan from straight above -> shots/<level>_topdown.png (one per floor: `_topdown_f<N>.png`)
 - `-- --capture --power` same shots with every power zone switched on (`<level>_pw_*.png`)
+- `-- --pocketcheck c f r ...` stands the player at the edges of those cells and checks it can always walk away (finds slots you can be shoved into but not out of)
 - `-- --peek c f r yaw pitch [open] ...` drop the player at grid cells (flashlight on, enemies gone) and capture shots/peek_<n>.png; `open` opens every door for that shot
 - `-- --awarecheck` enemy awareness rules on deck03: dormant behind doors, slow notice at range, instant close/shot, hearing, giving up
 - `-- --deckcheck` scripted walk of deck03's three chains with teleports between steps (28 checks, shots/deck_*.png)

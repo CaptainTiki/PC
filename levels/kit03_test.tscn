@@ -77,6 +77,9 @@ mesh_library = ExtResource("4_irgg7")
 cell_size = Vector3(2, 4, 2)
 cell_octant_size = 2
 cell_center_y = false
+data = {
+"cells": PackedInt32Array(65559, 14, 655375)
+}
 
 [node name="Clutter" type="Node3D" parent="."]
 
