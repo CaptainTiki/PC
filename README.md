@@ -24,6 +24,26 @@ Linear boomer shooter, Godot 4.5 (Compatibility renderer).
   breaker, explosive (canister), vent_cover. `*_off` pieces are the unpowered twins
   that `Level.power_on()` swaps back to lit.
 
+## TrenchBroom pipeline (levels/tb)
+Brush-built levels beside the grid kit. Generated layouts are the clay; adopt one, then edit
+it in TrenchBroom (add a room, cut a corridor, drop props as point entities).
+
+    tools/rebuild_tb.sh 1337                 # seed -> .json -> .map -> .tscn -> screenshots
+    tools/rebuild_tb.sh levels/tb/foo.map    # hand-edited map: build + screenshots only
+
+- `tools/mapgen.py`        layout generator (rooms, loops, pits, catwalk, stairs, doors) -> seedN.json + automap png
+- `tools/export_map.py`    dressing rules -> seedN.map. One TrenchBroom layer per rule (floor, border,
+  ceiling, skirting, panel, cornice, beam, stairs, lamp, doorframe); brushes chunked into 8 m
+  `func_detail` entities so the Compatibility renderer's per-mesh light cap stays local.
+- `tools/gen_tb_textures.py` the kit tiles as standalone 64px PNGs + normal/roughness/emission (art/textures/tb)
+- `tools/build_tb_config.gd` FGD + map settings + `levels/tb/trenchbroom/Collider/` (GameConfig.cfg, Collider.fgd):
+  copy that folder into TrenchBroom's `games/` dir and set its game path to this repo root.
+- `tools/build_tb_level.gd` .map -> levels/tb/<name>.tscn via FuncGodot (addons/func_godot); root script scripts/tb_level.gd
+- Units: 32/m. Cell 64. Floor step 32 (1 m). Ceiling level 56 (1.75 m). Door opening 1.5 m x 3.3 m (fits door.tscn).
+- Entities: info_player_start, light (light_color 0-255, light_energy, omni_range), prop_door (angle, lock),
+  shot (screenshot marker), prop_crate/_crate_stack/_canister/_console/_breaker, item_health/_cells,
+  monster_drifter/_skitter, trigger_exit — all mapped to the existing scenes.
+
 ## Pipeline
     tools/rebuild_and_shoot.sh [level]   # textures -> kit -> level -> screenshots
 - `tools/gen_textures.py`  procedural seamless 64px tile atlas + emission atlas

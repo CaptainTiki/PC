@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="QuakeMapFile"
+uid="uid://beuyfg3jdtcmm"
+path="res://.godot/imported/seed1337.map-a91a56b732009a1525d578f372259f21.tres"
+
+[deps]
+
+source_file="res://levels/tb/seed1337.map"
+dest_files=["res://.godot/imported/seed1337.map-a91a56b732009a1525d578f372259f21.tres"]
+
+[params]
+
