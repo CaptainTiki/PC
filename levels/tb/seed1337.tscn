@@ -47861,7 +47861,7 @@ initial_velocity_max = 3.5
 scale_amount_curve = SubResource("shrink")
 
 [node name="entity_1548_info_player_start" type="CharacterBody3D" parent="Map" instance=ExtResource("22_uhghb")]
-transform = Transform3D(0.3583678, 0, -0.93358046, 0, 1, 0, 0.93358046, 0, 0.3583678, 36, 2.0625, 86)
+transform = Transform3D(0.3420201, 0, -0.9396926, 0, 1, 0, 0.9396926, 0, 0.3420201, 37, 3.125, 85)
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("23_k1rkc")

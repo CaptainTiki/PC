@@ -238,13 +238,15 @@ def build(level):
             angle = 90
         ents.append(f'"classname" "prop_door"\n"origin" "{X + 32:g} {Z0 + 32:g} {fz:g}"\n"angle" "{angle}"\n"lock" "{"jammed" if d["locked"] else "none"}"')
 
-    # --- player start in room 1, facing the hub
-    r1 = level["rooms"][1]; cs = [tuple(p) for p in r1["cells"] if tuple(p) in cells]
-    cx = sum(p[0] for p in cs) / len(cs) + .5; cy = sum(p[1] for p in cs) / len(cs) + .5
+    # --- player start: the floor cell nearest room 1's centre, at that cell's own floor height
+    r1 = level["rooms"][1]; cs = [tuple(p) for p in r1["cells"] if tuple(p) in cells and cells[tuple(p)]["t"] == FLOOR]
+    mx = sum(p[0] for p in cs) / len(cs) + .5; my = sum(p[1] for p in cs) / len(cs) + .5
+    sc = min(cs, key=lambda p: abs(p[0] + .5 - mx) + abs(p[1] + .5 - my))
+    cx, cy = sc[0] + .5, sc[1] + .5
     hub = level["rooms"][0]; hcs = [tuple(p) for p in hub["cells"] if tuple(p) in cells]
     hx = sum(p[0] for p in hcs) / len(hcs) + .5; hy = sum(p[1] for p in hcs) / len(hcs) + .5
     ang = math.degrees(math.atan2(Y(hy) - Y(cy), (hx - cx) * CELL))
-    ents.append(f'"classname" "info_player_start"\n"origin" "{cx * CELL:g} {Y(cy):g} {r1["floor"] * LVL + 2:g}"\n"angle" "{ang:.0f}"')
+    ents.append(f'"classname" "info_player_start"\n"origin" "{cx * CELL:g} {Y(cy):g} {floor_u(cells[sc]) + 4:g}"\n"angle" "{ang:.0f}"')
 
     # screenshot markers: stand at the edge of a room, look at its centre
     def shot(name, r):

@@ -42550,8 +42550,8 @@
 }
 {
 "classname" "info_player_start"
-"origin" "2752 1152 66"
-"angle" "111"
+"origin" "2720 1184 100"
+"angle" "110"
 }
 {
 "classname" "shot"

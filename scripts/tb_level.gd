@@ -14,6 +14,8 @@ func _ready() -> void:
 		_capture.call_deferred()
 	elif "--playtest" in args:
 		add_child(Playtest.new())
+	elif "--movetest" in args:
+		add_child(load("res://tools/movetest.gd").new())
 	elif "--notetest" in args:   # dev: drop one pin without a keyboard, then quit
 		var np := NotePins.new()
 		add_child(np)
