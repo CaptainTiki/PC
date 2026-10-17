@@ -14,6 +14,17 @@ func _ready() -> void:
 		_capture.call_deferred()
 	elif "--playtest" in args:
 		add_child(Playtest.new())
+	elif "--notetest" in args:   # dev: drop one pin without a keyboard, then quit
+		var np := NotePins.new()
+		add_child(np)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		np._open()
+		np._on_submit("notetest pin from --notetest")
+		print("pins now: ", np.pins.size(), " -> ", np._notes_path())
+		get_tree().quit()
+	else:
+		add_child(NotePins.new())   # Q drops a note pin; see scripts/note_pins.gd
 
 func _capture() -> void:
 	var cam := Camera3D.new()
