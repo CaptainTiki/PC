@@ -1,0 +1,9 @@
+{"cell":[54,54],"level":"seed1337","n":1,"note":"Door can't be seen","pitch":-17.0,"pos":[34.34,4.0,108.31],"ts":"2026-10-17T23:54:53","yaw":118.0}
+{"cell":[57,8],"level":"seed1337","n":2,"note":"i see these doors all alround - but they aren't sealed - you can walk right past them","pitch":21.0,"pos":[127.01,1.0,115.92],"ts":"2026-10-17T23:56:08","yaw":21.0}
+{"cell":[53,8],"level":"seed1337","n":3,"note":"why are their 2 lights offset? seems odd","pitch":53.0,"pos":[126.62,1.0,107.05],"ts":"2026-10-17T23:56:20","yaw":11.0}
+{"cell":[51,8],"level":"seed1337","n":4,"note":"two doors? but you can walk aroud them - hallway is 2 wide, but doors are 1 wide?","pitch":30.0,"pos":[126.08,1.0,102.11],"ts":"2026-10-17T23:56:37","yaw":2.0}
+{"cell":[64,5],"level":"seed1337","n":5,"note":"this texture is not tileable up and down - it looks like it should be  a cable run - but its just 2d and looks rough","pitch":33.0,"pos":[133.87,1.0,128.47],"ts":"2026-10-17T23:57:08","yaw":-103.0}
+{"cell":[60,4],"level":"seed1337","n":6,"note":"this texture looks like a bad camo paint.. i'm not sure what this is - but it doesn't tile well, and it doesn't fit in the wall","pitch":25.0,"pos":[134.58,1.0,121.86],"ts":"2026-10-17T23:57:40","yaw":-92.0}
+{"cell":[55,42],"level":"seed1337","n":7,"note":"why is this doorframe here?","pitch":27.0,"pos":[58.7,2.0,110.81],"ts":"2026-10-17T23:58:15","yaw":25.0}
+{"cell":[48,53],"level":"seed1337","n":8,"note":"there are a lot of places that are z fighting","pitch":11.0,"pos":[37.28,2.0,97.36],"ts":"2026-10-17T23:58:44","yaw":-127.0}
+{"cell":[48,53],"level":"seed1337","n":9,"note":"stairs should be half this height - this is a LARGE step up for 1 stair","pitch":-57.0,"pos":[36.45,2.06,97.6],"ts":"2026-10-17T23:59:01","yaw":-167.0}
