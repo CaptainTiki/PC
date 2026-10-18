@@ -58,7 +58,8 @@ description = "Door scene. 'angle' 0 = slab across X (corridor runs E-W), 90 = a
 class_properties = Dictionary[String, Variant]({
 "angle": 0.0,
 "lock": "none",
-"slab_width": 1.5
+"slab_width": 1.5,
+"texture": "tb/door"
 })
 auto_apply_to_matching_node_properties = true
 meta_properties = Dictionary[String, Variant]({
@@ -222,7 +223,7 @@ entity_definitions = Array[Resource]([SubResource("Resource_hs8co"), SubResource
 script = ExtResource("18_drdna")
 entity_fgd = SubResource("Resource_j1hvv")
 use_groups_hierarchy = true
-base_texture_dir = "res://art/textures/tb"
-base_material_dir = "res://art/textures/tb/materials"
+base_texture_dir = "res://art/textures"
+base_material_dir = "res://art/textures/materials"
 default_material = ExtResource("1_hdfp6")
 albedo_map_pattern = "%s"

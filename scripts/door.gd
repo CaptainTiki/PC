@@ -20,6 +20,7 @@ const LOCKS := {
 ## local offset when fully open (default: slide up into the header)
 @export var open_offset := Vector3(0, 3.1, 0)
 @export var slab_width := 1.5
+@export var texture := "tb/door"   # map-placed doors: texture path under art/textures/
 @export var slab_center_x := 0.0
 @export var open_distance := 4.5
 @export var speed := 1.4
@@ -53,17 +54,20 @@ var player: Node3D
 var _t := 0.0
 
 func _ready() -> void:
-	if slab_mesh == null:   # placed from a .map (no kit slab): build a slab to slab_width
+	if slab_mesh == null:   # placed from a .map (no kit slab): build a slab to slab_width from `texture`
 		var bm := BoxMesh.new()
 		bm.size = Vector3(slab_width, 3.25, 0.16)
-		var mat := load("res://art/textures/tb/materials/door.tres")
-		if mat == null:
-			mat = load("res://art/textures/tb/_template.tres").duplicate()
-			mat.albedo_texture = load("res://art/textures/tb/door.png")
-			mat.normal_enabled = true; mat.normal_texture = load("res://art/textures/tb/door_normal.png")
-			mat.emission_enabled = true; mat.emission_texture = load("res://art/textures/tb/door_emission.png")
-		mat = mat.duplicate()
-		mat.uv1_scale = Vector3(slab_width / 2.0, 1.625, 1.0)   # one 64px tile per 2 m
+		var base := "res://art/textures/" + texture
+		var mat: StandardMaterial3D = load("res://art/textures/tb/_template.tres").duplicate()
+		mat.albedo_texture = load(base + ".png")
+		if ResourceLoader.exists(base + "_normal.png"):
+			mat.normal_enabled = true; mat.normal_texture = load(base + "_normal.png")
+		if ResourceLoader.exists(base + "_roughness.png"):
+			mat.roughness_texture = load(base + "_roughness.png")
+		if ResourceLoader.exists(base + "_emission.png"):
+			mat.emission_enabled = true; mat.emission_texture = load(base + "_emission.png")
+		var tex_m: float = mat.albedo_texture.get_width() / 32.0 if mat.albedo_texture else 2.0   # texture width in metres at 32 u/m
+		mat.uv1_scale = Vector3(slab_width / tex_m, 3.25 / tex_m, 1.0)
 		bm.material = mat
 		mesh_instance.mesh = bm
 		mesh_instance.position = Vector3(slab_center_x, 1.625, 0)

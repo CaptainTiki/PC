@@ -53,6 +53,7 @@
 	angle(float) : "" : "0.0"
 	lock(string) : "" : "none"
 	slab_width(float) : "" : "1.5"
+	texture(string) : "" : "tb/door"
 ]
 
 @PointClass size(-4 -4 -4, 4 4 4) color(255 102 102) = shot : "Screenshot marker for -- --capture (camera at origin, facing angle)." 

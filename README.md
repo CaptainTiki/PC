@@ -39,6 +39,8 @@ it in TrenchBroom (add a room, cut a corridor, drop props as point entities).
 - `tools/build_tb_config.gd` FGD + map settings + `levels/tb/trenchbroom/Collider/` (GameConfig.cfg, Collider.fgd):
   copy that folder into TrenchBroom's `games/` dir and set its game path to this repo root.
 - `tools/build_tb_level.gd` .map -> levels/tb/<name>.tscn via FuncGodot (addons/func_godot); root script scripts/tb_level.gd
+- Textures: `art/textures/tb/` (our generated kit tiles) and `art/textures/lq/<set>/` (LibreQuake, BSD-3 — see
+  `docs/licenses/`). `tools/export_map.py <json> [quake|kit]` picks the dressing theme (table `THEMES` at the top).
 - Units: 32/m. Cell 64. Floor step 32 (1 m). Ceiling level 56 (1.75 m). Door opening 1.5 m x 3.3 m (fits door.tscn).
 - Playtest notes: press Q in a tb level to drop a pin, type, Enter. Lines go to `levels/tb/notes/<level>.jsonl`
   (pos, grid cell, yaw) and pins show in-world; commit the file and Claude reads it. (Q left weapon_next; wheel still cycles.)

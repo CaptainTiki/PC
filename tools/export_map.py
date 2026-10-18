@@ -18,7 +18,7 @@ Entities: info_player_start, light (Godot property names, FuncGodot applies them
 OmniLight3D), prop_door (-> scenes/props/door.tscn).
 
 Units: 32 per metre. 1 cell = 64 (2 m). Floor step 32 (1 m). Ceiling level 56 (1.75 m).
-Run: python3 tools/export_map.py levels/tb/seed1337.json
+Run: python3 tools/export_map.py levels/tb/seed1337.json [quake|kit]
 """
 import json, math, os, sys
 
@@ -30,10 +30,36 @@ VOID, FLOOR, DOOR, LOCKED, STAIRS, LIFT, PIT, CATWALK = range(8)
 
 def ceil_u(f, c): return f * LVL + (c - f) * LVC
 
+# ---------------------------------------------------------------- theme ----
+# Role -> texture path under art/textures/. Swap the table to re-dress a level.
+# "quake" = LibreQuake tech set (BSD-3, docs/licenses). "kit" = our own generated tiles.
+THEMES = {
+    "kit": {
+        "floor": "tb/floor", "floor_metal": "tb/floor_metal", "floor_grate": "tb/floor_grate", "pit": "tb/gutter_glow",
+        "kick": "tb/kick", "chamfer": "tb/chamfer", "ceiling": "tb/ceiling", "beam": "tb/beam",
+        "lamp": "tb/light_strip", "trim": "tb/trim", "rod": "tb/trim", "door_frame": "tb/trim", "door": "tb/door",
+        "panels": [("tb/wall", .72), ("tb/wall_vent", 1.0)],
+    },
+    "quake": {
+        "floor": "lq/tech/t_flor2a", "floor_metal": "lq/tech/t_flor1a", "floor_grate": "lq/tech/tek_grate", "pit": "lq/liquidsky/star_lava1_fbr",
+        "kick": "lq/tech/t_trim2a", "chamfer": "lq/tech/t_trim1c", "ceiling": "lq/tech/t_flat05", "beam": "lq/tech/t_trim1d",
+        "lamp": "lq/tech/tlight11_fbr", "trim": "lq/tech/metalstrip_1", "rod": "lq/tech/tek_pipe2", "door_frame": "lq/tech/t_trim2d", "door": "lq/tech/tek_door1",
+        "panels": [("lq/tech/t_wall1a", .30), ("lq/tech/t_wall3a", .50), ("lq/tech/t_blok03", .65),
+                   ("lq/tech/t_blok09", .78), ("lq/tech/t_wall1b", .88), ("lq/tech/comp1_2", .94), ("lq/tech/t_blok06", 1.0)],
+    },
+}
+THEME = THEMES["quake"]
+def role_tex(role): return THEME.get(role, role)
+def panel_tex(t):
+    for name, upto in THEME["panels"]:
+        if t < upto: return name
+    return THEME["panels"][-1][0]
+
 # ---------------------------------------------------------------- brushes ----
 def box(x0, y0, z0, x1, y1, z1, top, side=None, bottom=None):
     """Axis-aligned brush with per-face textures. Valve 220 axes; outward normals."""
     side = side or top; bottom = bottom or top
+    top, side, bottom = role_tex(top), role_tex(side), role_tex(bottom)
     faces = [
         (((x1, y0, z1), (x0, y0, z1), (x0, y1, z1)), top,    "[ 1 0 0 0 ] [ 0 -1 0 0 ]"),  # +z
         (((x0, y1, z0), (x0, y0, z0), (x1, y0, z0)), bottom, "[ 1 0 0 0 ] [ 0 -1 0 0 ]"),  # -z
@@ -49,6 +75,7 @@ def box(x0, y0, z0, x1, y1, z1, top, side=None, bottom=None):
     return "\n".join(out)
 
 def wedge(axis, lo, hi, z0, z1, tex="clip"):
+    tex = role_tex(tex)
     """Ramp prism. axis 'x': lo/hi = (x, zmin, zmax) edges; axis 'y': lo/hi = (y, xmin, xmax).
     Low edge at height z0 rising to z1 at the high edge; solid down to z0."""
     if axis == "x":
@@ -126,7 +153,7 @@ def build(level):
 
     # --- floors: solid columns from base to the floor, grouped by (height, top texture)
     def floor_tex(c):
-        if c["t"] == PIT: return "gutter_glow"
+        if c["t"] == PIT: return "pit"
         if c["t"] == CATWALK: return "floor_grate"
         if (c["x"], c["y"]) not in room_of: return "floor_metal"     # corridors
         return "floor"
@@ -157,7 +184,7 @@ def build(level):
     def wall_run(x0, y0, x1, y1, floor_z, ceil_z, key):
         """x0..x1 / y0..y1 in quake units (thin box). Splits into skirting / panel / cornice."""
         t = hash01(*key)
-        panel = "wall" if t < .72 else "wall_vent"
+        panel = panel_tex(t)
         layers["skirting"].append(box(x0, y0, base, x1, y1, floor_z + 16, "kick"))
         layers["panel"].append(box(x0, y0, floor_z + 16, x1, y1, ceil_z - 16, panel))
         layers["cornice"].append(box(x0, y0, ceil_z - 16, x1, y1, top, "chamfer"))
@@ -242,9 +269,9 @@ def build(level):
     #     pendants hung down to 4.5 m above the floor so the light reaches the deck.
     def light(cx, cz, z, energy, rng_, color="255 230 194", ceiling=None):
         ents.append(f'"classname" "light"\n"origin" "{cx:g} {cz:g} {z:g}"\n"light_color" "{color}"\n"light_energy" "{energy}"\n"omni_range" "{rng_}"')
-        layers["lamp"].append(box(cx - 16, cz - 16, z + 12, cx + 16, cz + 16, z + 16, "light_strip", "trim"))
+        layers["lamp"].append(box(cx - 16, cz - 16, z + 12, cx + 16, cz + 16, z + 16, "lamp", "trim"))
         if ceiling is not None and ceiling > z + 16:
-            layers["lamp"].append(box(cx - 2, cz - 2, z + 16, cx + 2, cz + 2, ceiling, "trim"))   # pendant rod
+            layers["lamp"].append(box(cx - 2, cz - 2, z + 16, cx + 2, cz + 2, ceiling, "rod"))   # pendant rod
     for r in level["rooms"]:
         cs = [tuple(p) for p in r["cells"] if tuple(p) in cells]
         cz = ceil_u(r["floor"], r["ceil"]); fz = r["floor"] * LVL
@@ -276,18 +303,18 @@ def build(level):
         X0, X1 = min(xs) * CELL, (max(xs) + 1) * CELL; Z0, Z1 = Y(max(ys) + 1), Y(min(ys))
         if d["axis"] == "x":     # corridor runs E-W: slab lies across z, thin in x
             xm = X0 + CELL // 2
-            layers["doorframe"].append(box(xm - 8, Z0, fz, xm + 8, Z0 + post, lint, "trim"))
-            layers["doorframe"].append(box(xm - 8, Z1 - post, fz, xm + 8, Z1, lint, "trim"))
-            layers["doorframe"].append(box(xm - 8, Z0, lint, xm + 8, Z1, cz, "trim"))
+            layers["doorframe"].append(box(xm - 8, Z0, fz, xm + 8, Z0 + post, lint, "door_frame"))
+            layers["doorframe"].append(box(xm - 8, Z1 - post, fz, xm + 8, Z1, lint, "door_frame"))
+            layers["doorframe"].append(box(xm - 8, Z0, lint, xm + 8, Z1, cz, "door_frame"))
             ox, oz, angle = xm, (Z0 + Z1) / 2, 0
         else:                    # corridor runs N-S: slab lies across x, thin in z
             zm = Z0 + CELL // 2
-            layers["doorframe"].append(box(X0, zm - 8, fz, X0 + post, zm + 8, lint, "trim"))
-            layers["doorframe"].append(box(X1 - post, zm - 8, fz, X1, zm + 8, lint, "trim"))
-            layers["doorframe"].append(box(X0, zm - 8, lint, X1, zm + 8, cz, "trim"))
+            layers["doorframe"].append(box(X0, zm - 8, fz, X0 + post, zm + 8, lint, "door_frame"))
+            layers["doorframe"].append(box(X1 - post, zm - 8, fz, X1, zm + 8, lint, "door_frame"))
+            layers["doorframe"].append(box(X0, zm - 8, lint, X1, zm + 8, cz, "door_frame"))
             ox, oz, angle = (X0 + X1) / 2, zm, 90
         width_m = (n * CELL - 2 * post) / U
-        ents.append(f'"classname" "prop_door"\n"origin" "{ox:g} {oz:g} {fz:g}"\n"angle" "{angle}"\n"lock" "{"jammed" if d["locked"] else "none"}"\n"slab_width" "{width_m:g}"')
+        ents.append(f'"classname" "prop_door"\n"origin" "{ox:g} {oz:g} {fz:g}"\n"angle" "{angle}"\n"lock" "{"jammed" if d["locked"] else "none"}"\n"slab_width" "{width_m:g}"\n"texture" "{THEME["door"]}"')
 
     # --- player start: the floor cell nearest room 1's centre, at that cell's own floor height
     r1 = level["rooms"][1]; cs = [tuple(p) for p in r1["cells"] if tuple(p) in cells and cells[tuple(p)]["t"] == FLOOR]
@@ -342,6 +369,7 @@ def write_map(layers, ents, path, name):
 
 if __name__ == "__main__":
     src = sys.argv[1]
+    if len(sys.argv) > 2: THEME = THEMES[sys.argv[2]]
     level = json.load(open(src))
     name = os.path.splitext(os.path.basename(src))[0]
     layers, ents = build(level)

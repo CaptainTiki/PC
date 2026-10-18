@@ -108,6 +108,45 @@ normal_scale = 1.0
 texture_filter = 2
 """)
 
+# ---- imported packs (art/textures/lq/**): normal + roughness from luminance, emission from *_fbr
+def lum_maps(path):
+    im = Image.open(path).convert("RGB"); a = np.asarray(im).astype(np.float32) / 255.0
+    lum = a @ np.array([0.3, 0.59, 0.11], np.float32)
+    # smooth a touch so single-pixel noise doesn't become relief, then quantise for chunkiness
+    k = (lum + np.roll(lum, 1, 0) + np.roll(lum, -1, 0) + np.roll(lum, 1, 1) + np.roll(lum, -1, 1)) / 5.0
+    h = np.round(k * 10) / 10
+    nrm = normal_from_height(h, 1.6)
+    rough = np.clip(0.85 - 0.35 * k + (np.round(lum * 4) / 4 - lum) * 0.2, 0.15, 1.0)
+    r8 = (rough * 255).astype(np.uint8)
+    return nrm, np.stack([r8, r8, r8], axis=-1)
+
+LQ = os.path.join(ROOT, "art", "textures", "lq")
+lq_count = 0
+SUFFIX = ("_fbr", "_normal", "_roughness", "_emission")
+for root_, _, files in os.walk(LQ):
+    for fn in files:
+        if not fn.endswith(".png") or fn[:-4].endswith(SUFFIX[1:]):
+            continue
+        base = os.path.join(root_, fn[:-4])
+        if fn[:-4].endswith("_fbr") and os.path.exists(base[:-4] + ".png"):
+            continue      # a fullbright layer for another texture: handled with that texture
+        if os.path.exists(base + "_normal.png") and os.path.getmtime(base + "_normal.png") > os.path.getmtime(base + ".png"):
+            continue
+        nrm, rgh = lum_maps(base + ".png")
+        Image.fromarray(nrm).save(base + "_normal.png")
+        Image.fromarray(rgh).save(base + "_roughness.png")
+        if os.path.exists(base + "_fbr.png"):
+            Image.open(base + "_fbr.png").convert("RGB").save(base + "_emission.png")
+        elif fn[:-4].endswith("_fbr"):
+            # a standalone fullbright texture (lights, lava, slime): the bright, saturated pixels glow
+            a = np.asarray(Image.open(base + ".png").convert("RGB")).astype(np.float32) / 255.0
+            lum = a @ np.array([0.3, 0.59, 0.11], np.float32)
+            sat = a.max(axis=-1) - a.min(axis=-1)
+            m = np.clip((np.maximum(lum, sat * 0.9) - 0.35) / 0.3, 0, 1)[..., None]
+            Image.fromarray((a * m * 255).astype(np.uint8)).save(base + "_emission.png")
+        lq_count += 1
+print(f"lq maps generated/updated: {lq_count}")
+
 # preview sheet: albedo | normal | roughness per row
 names = list(SET)
 sheet = Image.new("RGB", (3 * (T * 2 + 4), len(names) * (T * 2 + 4)), (10, 10, 10))

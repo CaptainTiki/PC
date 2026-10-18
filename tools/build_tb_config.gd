@@ -45,7 +45,7 @@ func _init() -> void:
 
 	# door -> scenes/props/door.tscn (slab 1.5 m x 3.25 m; frame it with brushes). lock: none/jammed/inside/lockdown/seal/keycard
 	defs.append(_point("prop_door", "Door scene. 'angle' 0 = slab across X (corridor runs E-W), 90 = across Y.",
-		"res://scenes/props/door.tscn", "", {"angle": 0.0, "lock": "none", "slab_width": 1.5}, [], true, Vector3(48, 8, 104)))
+		"res://scenes/props/door.tscn", "", {"angle": 0.0, "lock": "none", "slab_width": 1.5, "texture": "tb/door"}, [], true, Vector3(48, 8, 104)))
 
 	# screenshot marker: a Marker3D in group 'shots', named from shot_name
 	var shot := _point("shot", "Screenshot marker for -- --capture (camera at origin, facing angle).", "", "Marker3D",
@@ -77,8 +77,8 @@ func _init() -> void:
 	ms.inverse_scale_factor = 32.0
 	ms.entity_fgd = fgd
 	ms.use_groups_hierarchy = true         # TrenchBroom layers become child nodes (floor / walls / beams ...)
-	ms.base_texture_dir = "res://art/textures/tb"
-	ms.base_material_dir = "res://art/textures/tb/materials"
+	ms.base_texture_dir = "res://art/textures"
+	ms.base_material_dir = "res://art/textures/materials"
 	ms.default_material = load("res://art/textures/tb/_template.tres")
 	ms.save_generated_materials = true
 	ms.albedo_map_pattern = "%s"
@@ -89,7 +89,7 @@ func _init() -> void:
 	var cfg := TrenchBroomGameConfig.new()
 	cfg.game_name = "Collider"
 	cfg.fgd_file = fgd
-	cfg.textures_root_folder = "art/textures/tb"
+	cfg.textures_root_folder = "art/textures"
 	cfg.entity_scale = "32"
 	var dir := ProjectSettings.globalize_path(OUT + "trenchbroom/Collider")
 	DirAccess.make_dir_recursive_absolute(dir)
