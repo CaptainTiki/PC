@@ -54,7 +54,8 @@ classname = "prop_door"
 description = "Door scene. 'angle' 0 = slab across X (corridor runs E-W), 90 = across Y."
 class_properties = Dictionary[String, Variant]({
 "angle": 0.0,
-"lock": "none"
+"lock": "none",
+"slab_width": 1.5
 })
 auto_apply_to_matching_node_properties = true
 meta_properties = Dictionary[String, Variant]({

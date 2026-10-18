@@ -7,7 +7,7 @@ Every rule writes into its own TrenchBroom layer so a hand edit can select-by-la
   border     floor_grate strip along every wall and riser (hides the tiling seam)
   ceiling    solid columns down to ceiling height
   skirting   kick band at the base of every wall
-  panel      wall panels, varied per run by hash (wall / wall_vent / wall_rust / wall_cables)
+  panel      wall panels, varied per run by hash (wall / wall_vent)
   cornice    chamfer band under every ceiling edge
   beam       ceiling beams across rooms every 4th row
   stairs     4 real steps per stair cell
@@ -44,6 +44,37 @@ def box(x0, y0, z0, x1, y1, z1, top, side=None, bottom=None):
     ]
     out = ["{"]
     for pts, tex, axes in faces:
+        out.append(" ".join(f"( {a:g} {b:g} {c:g} )" for a, b, c in pts) + f" {tex} {axes} 0 1 1")
+    out.append("}")
+    return "\n".join(out)
+
+def wedge(axis, lo, hi, z0, z1, tex="clip"):
+    """Ramp prism. axis 'x': lo/hi = (x, zmin, zmax) edges; axis 'y': lo/hi = (y, xmin, xmax).
+    Low edge at height z0 rising to z1 at the high edge; solid down to z0."""
+    if axis == "x":
+        xl, xh, a0, a1 = lo[0], hi[0], lo[1], lo[2]
+        P = lambda x, y, z: (x, y, z)
+    else:
+        xl, xh, a0, a1 = lo[0], hi[0], lo[1], lo[2]
+        P = lambda x, y, z: (y, x, z)
+    # bottom, two ends (a0, a1), vertical face at the high edge, and the slope
+    ax = "[ 1 0 0 0 ] [ 0 -1 0 0 ]"
+    faces = [
+        ((P(xh, a0, z0), P(xl, a0, z0), P(xl, a1, z0)), ax),                       # bottom (-z)
+        ((P(xl, a0, z0), P(xh, a0, z0), P(xh, a0, z1)), ax),                       # side a0
+        ((P(xh, a1, z0), P(xl, a1, z0), P(xl, a1, z1)), ax),                       # side a1
+        ((P(xh, a0, z0), P(xh, a1, z0), P(xh, a1, z1)), ax),                       # high end wall
+        ((P(xl, a0, z0), P(xl, a1, z0), P(xh, a1, z1)), ax),                       # slope
+    ]
+    # fix winding by checking each normal against the centroid
+    import numpy as _np
+    pts_all = _np.array([p for f, _ in faces for p in f], dtype=float)
+    cen = pts_all.mean(axis=0)
+    out = ["{"]
+    for pts, axes in faces:
+        p = _np.array(pts, dtype=float)
+        n = _np.cross(p[0] - p[1], p[2] - p[1])
+        if _np.dot(n, p[1] - cen) < 0: pts = (pts[0], pts[2], pts[1])
         out.append(" ".join(f"( {a:g} {b:g} {c:g} )" for a, b, c in pts) + f" {tex} {axes} 0 1 1")
     out.append("}")
     return "\n".join(out)
@@ -126,7 +157,7 @@ def build(level):
     def wall_run(x0, y0, x1, y1, floor_z, ceil_z, key):
         """x0..x1 / y0..y1 in quake units (thin box). Splits into skirting / panel / cornice."""
         t = hash01(*key)
-        panel = "wall" if t < .55 else "wall_vent" if t < .72 else "wall_rust" if t < .86 else "wall_cables"
+        panel = "wall" if t < .72 else "wall_vent"
         layers["skirting"].append(box(x0, y0, base, x1, y1, floor_z + 16, "kick"))
         layers["panel"].append(box(x0, y0, floor_z + 16, x1, y1, ceil_z - 16, panel))
         layers["cornice"].append(box(x0, y0, ceil_z - 16, x1, y1, top, "chamfer"))
@@ -151,10 +182,12 @@ def build(level):
         wall_run((x + 1) * CELL, Y(y1), (x + 1) * CELL + 16, Y(y0), fz, cz, (x + 1, y0))
     for x, y0, y1, fz, cz in edge_runs(W_, True):
         wall_run(x * CELL - 16, Y(y1), x * CELL, Y(y0), fz, cz, (x - 1, y0))
-    for y, x0, x1, fz, cz in edge_runs(S, False):
-        wall_run(x0 * CELL, Y(y + 1) - 16, x1 * CELL, Y(y + 1), fz, cz, (x0, y + 1))
-    for y, x0, x1, fz, cz in edge_runs(N, False):
-        wall_run(x0 * CELL, Y(y), x1 * CELL, Y(y) + 16, fz, cz, (x0, y - 1))
+    for y, x0, x1, fz, cz in edge_runs(S, False):      # void row is y+1
+        xs = x0 * CELL + (16 if at((x0 - 1, y + 1)) else 0); xe = x1 * CELL - (16 if at((x1, y + 1)) else 0)
+        wall_run(xs, Y(y + 1) - 16, xe, Y(y + 1), fz, cz, (x0, y + 1))
+    for y, x0, x1, fz, cz in edge_runs(N, False):      # void row is y-1
+        xs = x0 * CELL + (16 if at((x0 - 1, y - 1)) else 0); xe = x1 * CELL - (16 if at((x1, y - 1)) else 0)
+        wall_run(xs, Y(y), xe, Y(y) + 16, fz, cz, (x0, y - 1))
 
     # --- border grate strips along walls and risers (12u wide, 2u tall on the floor)
     for (x, y), c in cells.items():
@@ -178,7 +211,8 @@ def build(level):
         zc = Y(y + 1) + CELL / 2
         layers["beam"].append(box(x * CELL, zc - 6, cz - 14, (x + 1) * CELL, zc + 6, cz, "beam"))
 
-    # --- stairs: 4 steps rising from the lower neighbour's level to this cell's level
+    # --- stairs: 8 steps (12.5 cm) from the lower neighbour's level up to this cell's level,
+    #     plus an invisible clip ramp over them so the player walks up smoothly
     for (x, y), c in cells.items():
         if c["t"] != STAIRS: continue
         f1 = floor_u(c); lower = None
@@ -188,14 +222,21 @@ def build(level):
         X, Z0, Z1 = x * CELL, Y(y + 1), Y(y)
         if not lower:
             layers["floor"].append(box(X, Z0, base, X + CELL, Z1, f1, "floor_metal", "kick")); continue
-        dx, dy, f0 = lower; rise = (f1 - f0) / 4
+        dx, dy, f0 = lower; N_ = 8; rise = (f1 - f0) / N_; run = CELL / N_
         layers["floor"].append(box(X, Z0, base, X + CELL, Z1, f0, "floor_metal", "kick"))
-        for i in range(4):
-            h = f0 + rise * (i + 1); run = CELL / 4
-            if dx == 1:   layers["stairs"].append(box(X + CELL - run * (i + 1), Z0, f0, X + CELL, Z1, h, "floor_metal", "kick"))
-            if dx == -1:  layers["stairs"].append(box(X, Z0, f0, X + run * (i + 1), Z1, h, "floor_metal", "kick"))
-            if dy == 1:   layers["stairs"].append(box(X, Z0, f0, X + CELL, Z0 + run * (i + 1), h, "floor_metal", "kick"))   # lower is south (screen down)
-            if dy == -1:  layers["stairs"].append(box(X, Z1 - run * (i + 1), f0, X + CELL, Z1, h, "floor_metal", "kick"))
+        for i in range(N_):
+            h = f0 + rise * (i + 1)
+            if dx == 1:   layers["stairs"].append(box(X + CELL - run * (i + 1), Z0, f0, X + CELL - run * i, Z1, h, "floor_metal", "kick"))
+            if dx == -1:  layers["stairs"].append(box(X + run * i, Z0, f0, X + run * (i + 1), Z1, h, "floor_metal", "kick"))
+            if dy == 1:   layers["stairs"].append(box(X, Z0 + run * i, f0, X + CELL, Z0 + run * (i + 1), h, "floor_metal", "kick"))
+            if dy == -1:  layers["stairs"].append(box(X, Z1 - run * (i + 1), f0, X + CELL, Z1 - run * i, h, "floor_metal", "kick"))
+        # clip ramp through the step tops: starts one tread into the lower cell at floor level,
+        # reaches the upper floor one tread before the cell ends (so no lip at either end)
+        if dx == 1:    lo, hi = ((X + CELL + run, Z0, Z1), (X + run, Z0, Z1)); axis = "x"
+        if dx == -1:   lo, hi = ((X - run, Z0, Z1), (X + CELL - run, Z0, Z1)); axis = "x"
+        if dy == 1:    lo, hi = ((Z0 - run, X, X + CELL), (Z1 - run, X, X + CELL)); axis = "y"
+        if dy == -1:   lo, hi = ((Z1 + run, X, X + CELL), (Z0 + run, X, X + CELL)); axis = "y"
+        layers["stairs"].append(wedge(axis, lo, hi, f0, f1))
 
     # --- lights + lamp fixtures. Small rooms: one ceiling light. Big rooms: a 4-cell grid of
     #     pendants hung down to 4.5 m above the floor so the light reaches the deck.
@@ -215,28 +256,38 @@ def build(level):
             for p in cs:
                 if p[0] % 4 == 2 and p[1] % 4 == 2 and cells[p]["t"] != PIT:
                     light((p[0] + .5) * CELL, Y(p[1] + .5), hang, 4.5, 12, "255 230 194", cz)
+    for (x, y), c in cells.items():          # pits: dim cyan light low down so the drop reads
+        if c["t"] == PIT and x % 3 == 0 and y % 3 == 0:
+            ents.append(f'"classname" "light"\n"origin" "{(x + .5) * CELL:g} {Y(y + .5):g} {floor_u(c) + 24:g}"\n"light_color" "90 200 255"\n"light_energy" "2.5"\n"omni_range" "7"')
+    def corridor(p): return p in cells and p not in room_of and cells[p]["t"] in (FLOOR, DOOR, LOCKED, STAIRS)
     for (x, y), c in cells.items():
-        if (x, y) in room_of or c["t"] not in (FLOOR, DOOR) or (x + y) % 4: continue
-        light((x + .5) * CELL, Y(y + .5), ceil_of(c) - 20, 3.0, 9, "140 230 255")
+        if not corridor((x, y)) or c["t"] != FLOOR: continue
+        ew = corridor((x + 1, y)) or corridor((x - 1, y)); ns = corridor((x, y + 1)) or corridor((x, y - 1))
+        hit = (ew and x % 4 == 0 and not corridor((x, y - 1))) or (ns and not ew and y % 4 == 0 and not corridor((x - 1, y)))
+        if hit: light((x + .5) * CELL, Y(y + .5), ceil_of(c) - 20, 3.0, 9, "140 230 255")
 
-    # --- doors: frame to the Door scene's slab (1.5 m x 3.25 m) + prop_door entity
+    # --- doors: one frame + one Door scene per run of door cells, spanning the corridor width.
+    #     Opening = run width - 2 posts; the Door scene gets slab_width to match.
     for d in level["doors"]:
-        x, y = d["x"], d["y"]; c = cells[(x, y)]
-        ew = at((x + 1, y)) and at((x - 1, y)); ns = at((x, y + 1)) and at((x, y - 1))
-        if ew == ns: continue
-        fz, cz = floor_u(c), ceil_of(c); X, Z0, Z1 = x * CELL, Y(y + 1), Y(y)
-        lint = fz + int(3.3 * U); post = int(.25 * U)         # 1.5 m opening
-        if ew:   # corridor runs E-W: door slab lies in the y-z plane, posts at the z edges
-            layers["doorframe"].append(box(X + 24, Z0, fz, X + 40, Z0 + post, cz, "trim"))
-            layers["doorframe"].append(box(X + 24, Z1 - post, fz, X + 40, Z1, cz, "trim"))
-            layers["doorframe"].append(box(X + 24, Z0, lint, X + 40, Z1, cz, "trim"))
-            angle = 0
-        else:
-            layers["doorframe"].append(box(X, Z0 + 24, fz, X + post, Z0 + 40, cz, "trim"))
-            layers["doorframe"].append(box(X + CELL - post, Z0 + 24, fz, X + CELL, Z0 + 40, cz, "trim"))
-            layers["doorframe"].append(box(X, Z0 + 24, lint, X + CELL, Z0 + 40, cz, "trim"))
-            angle = 90
-        ents.append(f'"classname" "prop_door"\n"origin" "{X + 32:g} {Z0 + 32:g} {fz:g}"\n"angle" "{angle}"\n"lock" "{"jammed" if d["locked"] else "none"}"')
+        run = [tuple(p) for p in d["cells"]]; c = cells[run[0]]
+        fz, cz = floor_u(c), ceil_of(c)
+        lint = fz + int(3.3 * U); post = int(.25 * U); n = len(run)
+        xs = [p[0] for p in run]; ys = [p[1] for p in run]
+        X0, X1 = min(xs) * CELL, (max(xs) + 1) * CELL; Z0, Z1 = Y(max(ys) + 1), Y(min(ys))
+        if d["axis"] == "x":     # corridor runs E-W: slab lies across z, thin in x
+            xm = X0 + CELL // 2
+            layers["doorframe"].append(box(xm - 8, Z0, fz, xm + 8, Z0 + post, lint, "trim"))
+            layers["doorframe"].append(box(xm - 8, Z1 - post, fz, xm + 8, Z1, lint, "trim"))
+            layers["doorframe"].append(box(xm - 8, Z0, lint, xm + 8, Z1, cz, "trim"))
+            ox, oz, angle = xm, (Z0 + Z1) / 2, 0
+        else:                    # corridor runs N-S: slab lies across x, thin in z
+            zm = Z0 + CELL // 2
+            layers["doorframe"].append(box(X0, zm - 8, fz, X0 + post, zm + 8, lint, "trim"))
+            layers["doorframe"].append(box(X1 - post, zm - 8, fz, X1, zm + 8, lint, "trim"))
+            layers["doorframe"].append(box(X0, zm - 8, lint, X1, zm + 8, cz, "trim"))
+            ox, oz, angle = (X0 + X1) / 2, zm, 90
+        width_m = (n * CELL - 2 * post) / U
+        ents.append(f'"classname" "prop_door"\n"origin" "{ox:g} {oz:g} {fz:g}"\n"angle" "{angle}"\n"lock" "{"jammed" if d["locked"] else "none"}"\n"slab_width" "{width_m:g}"')
 
     # --- player start: the floor cell nearest room 1's centre, at that cell's own floor height
     r1 = level["rooms"][1]; cs = [tuple(p) for p in r1["cells"] if tuple(p) in cells and cells[tuple(p)]["t"] == FLOOR]

@@ -144,7 +144,7 @@ class Gen:
                 seen.add(p); ordered.append(p)
         ordered.sort(key=lambda p: abs(p[0] - ax) + abs(p[1] - ay))
 
-        width = rng.choice([1, 2, 2, 3])
+        width = rng.choice([1, 2, 2])
         new = []
         for (x, y) in ordered:
             for (nx, ny) in [(x + i, y + j) for i in range(width) for j in range(width)]:
@@ -167,11 +167,6 @@ class Gen:
             if prev is not None and self.floor[y][x] != prev:
                 self.type[y][x] = STAIRS
             prev = self.floor[y][x]
-        # door at each end: first/last corridor cell adjacent to a room
-        for (x, y) in (new[0], new[-1]):
-            kind = LOCKED if rng.random() < 0.15 else DOOR
-            self.type[y][x] = kind
-            self.doors.append(dict(x=x, y=y, locked=kind == LOCKED))
 
     def connect(self):
         rng = self.rng
@@ -200,11 +195,48 @@ class Gen:
         for i, j in edges:
             a, b = rooms[i], rooms[j]
             self.carve_corridor(a["center"], b["center"], a["floor"], b["floor"])
-        # a lift or two: turn a stairs cell with big drop into a lift
+        self.place_doors()
+
+    def place_doors(self):
+        """A door is the whole corridor cross-section where a corridor meets a room:
+        every corridor cell with a room neighbour becomes DOOR, grouped into runs
+        across the corridor; each run is one door (locked by chance)."""
+        rng = self.rng
+        room_cells = set()
+        for r in self.rooms:
+            room_cells.update(r["cells"])
+        cand = set()
         for y in range(self.h):
             for x in range(self.w):
-                if self.type[y][x] == STAIRS and rng.random() < 0.12:
-                    self.type[y][x] = LIFT
+                if self.type[y][x] not in (FLOOR, STAIRS) or (x, y) in room_cells: continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if (nx, ny) in room_cells and self.type[ny][nx] == FLOOR:
+                        # the corridor must continue away from the room on the other side
+                        bx, by = x - dx, y - dy
+                        if 0 <= bx < self.w and 0 <= by < self.h and self.type[by][bx] != VOID and (bx, by) not in room_cells:
+                            cand.add((x, y, dx, dy))
+        # group by (axis, line) into runs of adjacent cells
+        seen = set()
+        self.doors = []
+        for (x, y, dx, dy) in sorted(cand):
+            if (x, y) in seen: continue
+            run = [(x, y)]
+            if dx:   # corridor runs E-W, door spans N-S cells
+                for s_ in (1, -1):
+                    k = 1
+                    while (x, y + s_ * k, dx, dy) in cand: run.append((x, y + s_ * k)); k += 1
+            else:
+                for s_ in (1, -1):
+                    k = 1
+                    while (x + s_ * k, y, dx, dy) in cand: run.append((x + s_ * k, y)); k += 1
+            if len(run) > 2: continue           # too wide for a door: leave it an open mouth
+            locked = rng.random() < 0.15
+            for (cx, cy) in run:
+                seen.add((cx, cy))
+                self.type[cy][cx] = LOCKED if locked else DOOR
+            run.sort()
+            self.doors.append(dict(cells=run, axis="x" if dx else "y", locked=locked))
 
     # ---------- output ----------
     def render_automap(self, scale=10):

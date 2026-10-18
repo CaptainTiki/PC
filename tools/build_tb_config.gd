@@ -45,7 +45,7 @@ func _init() -> void:
 
 	# door -> scenes/props/door.tscn (slab 1.5 m x 3.25 m; frame it with brushes). lock: none/jammed/inside/lockdown/seal/keycard
 	defs.append(_point("prop_door", "Door scene. 'angle' 0 = slab across X (corridor runs E-W), 90 = across Y.",
-		"res://scenes/props/door.tscn", "", {"angle": 0.0, "lock": "none"}, [], true, Vector3(48, 8, 104)))
+		"res://scenes/props/door.tscn", "", {"angle": 0.0, "lock": "none", "slab_width": 1.5}, [], true, Vector3(48, 8, 104)))
 
 	# screenshot marker: a Marker3D in group 'shots', named from shot_name
 	var shot := _point("shot", "Screenshot marker for -- --capture (camera at origin, facing angle).", "", "Marker3D",

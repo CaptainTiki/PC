@@ -53,7 +53,22 @@ var player: Node3D
 var _t := 0.0
 
 func _ready() -> void:
-	mesh_instance.mesh = slab_mesh
+	if slab_mesh == null:   # placed from a .map (no kit slab): build a slab to slab_width
+		var bm := BoxMesh.new()
+		bm.size = Vector3(slab_width, 3.25, 0.16)
+		var mat := load("res://art/textures/tb/materials/door.tres")
+		if mat == null:
+			mat = load("res://art/textures/tb/_template.tres").duplicate()
+			mat.albedo_texture = load("res://art/textures/tb/door.png")
+			mat.normal_enabled = true; mat.normal_texture = load("res://art/textures/tb/door_normal.png")
+			mat.emission_enabled = true; mat.emission_texture = load("res://art/textures/tb/door_emission.png")
+		mat = mat.duplicate()
+		mat.uv1_scale = Vector3(slab_width / 2.0, 1.625, 1.0)   # one 64px tile per 2 m
+		bm.material = mat
+		mesh_instance.mesh = bm
+		mesh_instance.position = Vector3(slab_center_x, 1.625, 0)
+	else:
+		mesh_instance.mesh = slab_mesh
 	var box := BoxShape3D.new()
 	box.size = Vector3(slab_width, 3.25, 0.16)
 	shape.shape = box
